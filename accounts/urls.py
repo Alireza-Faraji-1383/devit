@@ -1,7 +1,8 @@
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.urls import path
-from .views import UserRegisterView , UserLoginView , test , TokenRefreshView , UserLogoutView
-
+from .views import (TokenRefreshView ,UserRegisterView , UserLoginView , UserLogoutView  , UserInfoView ,  UserChangeView 
+                    ,UserFollowView
+)
 urlpatterns = [
 
     path('refresh_from_cookie/', TokenRefreshView.as_view(), name='token_refresh_from_cookie'),
@@ -9,7 +10,11 @@ urlpatterns = [
     path('login/', UserLoginView.as_view(), name='logout'),
     path('logout/', UserLogoutView.as_view(), name='logout'),
     
-    path('test/', test.as_view(), name='test'),
+    path('me/', UserChangeView.as_view(), name='user'),
+    path('user/<str:username>/', UserInfoView.as_view(), name='user'),
+    path('user/<str:username>/follow/', UserFollowView.as_view(), name='user_follow'),
+    
+
     
 
     # JWT

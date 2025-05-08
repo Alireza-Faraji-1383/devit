@@ -13,7 +13,7 @@ class User(AbstractUser):
     avatar = models.ImageField(upload_to='avatars/%Y/%m', blank=True, null=True)
 
     def __str__(self):
-        return self.username + self.email
+        return self.username
     
 
 

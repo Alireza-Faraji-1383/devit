@@ -1,14 +1,44 @@
-from .models import User
-from rest_framework.serializers import ModelSerializer
+from .models import User , Follow
+from rest_framework import serializers
 
-class UserAuthSerializer(ModelSerializer):
+class UserAuthSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['username','password']
+        fields = ['pk','username','password']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
 
+class UserInfoSerializer(serializers.ModelSerializer):
+
+    followers = serializers.SerializerMethodField()
+    following = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User    
+        fields = ['pk','username','email', 'first_name', 'last_name', 'bio', 'gender', 'birthday', 'avatar','followers','following']
+        
+        extra_kwargs = {
+
+            'username': {'read_only': True},
+            'email': {'read_only': True},
+            'followers': {'read_only': True},
+            'following': {'read_only': True},
+
+        }
+
+    def get_followers(self, obj):
+        return obj.followers.count()
+        
+    def get_following(self, obj):
+        return obj.following.count()
+    
+
+
+class FollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Follow
+        fields = ['pk','follower','following']
