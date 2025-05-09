@@ -6,9 +6,9 @@ from .views import (TokenRefreshView ,UserRegisterView , UserLoginView , UserLog
 urlpatterns = [
 
     path('refresh_from_cookie/', TokenRefreshView.as_view(), name='token_refresh_from_cookie'),
-    path('register/', UserRegisterView.as_view(), name='user'),
-    path('login/', UserLoginView.as_view(), name='logout'),
-    path('logout/', UserLogoutView.as_view(), name='logout'),
+    path('signup/', UserRegisterView.as_view(), name='signup'),
+    path('signin/', UserLoginView.as_view(), name='signin'),
+    path('signout/', UserLogoutView.as_view(), name='signout'),
     
     path('me/', UserChangeView.as_view(), name='user'),
     path('user/<str:username>/', UserInfoView.as_view(), name='user'),
