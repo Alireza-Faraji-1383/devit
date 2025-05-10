@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Follow, User
-from .serializers import   FollowSerializer, UserAuthSerializer , UserInfoSerializer
+from .serializers import   FollowSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer
 from rest_framework_simplejwt.tokens import RefreshToken , TokenError
 from rest_framework import status
 from django.shortcuts import get_object_or_404
@@ -29,7 +29,7 @@ class TokenRefreshView(APIView):
 
 
 class UserRegisterView(APIView):
-    serializer_class = UserAuthSerializer
+    serializer_class = UserRegisterSerializer
     permission_classes = (permissions.AllowAny,)
 
     def post(self,request):

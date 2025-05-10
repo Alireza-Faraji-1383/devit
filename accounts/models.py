@@ -4,11 +4,11 @@ from django.forms import ValidationError
 
 class User(AbstractUser):
     
+    email = models.EmailField(unique=True)
+
     bio = models.TextField(blank=True, null=True)
     gender = models.CharField(max_length=1, choices=(('M', 'Male'), ('F', 'Female')), blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
-
-
 
     avatar = models.ImageField(upload_to='avatars/%Y/%m', blank=True, null=True)
 

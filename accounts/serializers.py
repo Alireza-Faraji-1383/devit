@@ -2,15 +2,24 @@ from .models import User , Follow
 from rest_framework import serializers
 
 class UserAuthSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username','password']
+        extra_kwargs = {'password': {'write_only': True}}
+
+
+class UserRegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ['pk','username','password']
+        fields = ['pk','username','email','password']
         extra_kwargs = {'password': {'write_only': True}}
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
+    
+
 
 class UserInfoSerializer(serializers.ModelSerializer):
 
