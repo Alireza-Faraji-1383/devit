@@ -5,7 +5,10 @@ class UserAuthSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['username','password']
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {'password': {'write_only': True,'required': True},
+                        'username': {'required': True},
+                        }
+
 
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -13,7 +16,10 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['pk','username','email','password']
-        extra_kwargs = {'password': {'write_only': True}}
+        extra_kwargs = {'username': {'required': True},
+                        'email': {'required': True},
+                        'password': {'write_only': True , 'required': True},
+                        }
 
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
@@ -51,3 +57,6 @@ class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
         fields = ['pk','follower','following']
+        extra_kwargs = {'follower': {'required': True},
+                        'following': {'required': True},
+                        }
