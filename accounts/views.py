@@ -7,6 +7,7 @@ from .serializers import   FollowSerializer, UserAuthSerializer , UserInfoSerial
 from rest_framework_simplejwt.tokens import RefreshToken , TokenError
 from rest_framework import status
 from django.shortcuts import get_object_or_404
+from core.utils.responses import StandardResponse
 
 
 class TokenRefreshView(APIView):
@@ -14,7 +15,7 @@ class TokenRefreshView(APIView):
         refresh_token = request.COOKIES.get('refresh_token')
 
         if refresh_token is None:
-            return Response({'error': 'Refresh token not found'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'errors': 'Refresh token not found'}, status=status.HTTP_401_UNAUTHORIZED)
 
         try:
             refresh = RefreshToken(refresh_token)
@@ -23,7 +24,7 @@ class TokenRefreshView(APIView):
             response.set_cookie('access_token', access_token, httponly=True, samesite='Lax')
             return response
         except TokenError:
-            return Response({'error': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'errors': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
         
 
 
@@ -36,8 +37,8 @@ class UserRegisterView(APIView):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "شما با موفقیت ثبت نام کردید"}, status=status.HTTP_201_CREATED)
-        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return StandardResponse.success(message="شما با موفقیت ثبت نام کردید", status=status.HTTP_201_CREATED)
+        return StandardResponse.error(errors= serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserLoginView(APIView):
@@ -63,9 +64,9 @@ class UserLoginView(APIView):
                 response.set_cookie("refresh_token", str(refresh), httponly=True, samesite='Lax')
                 return response
         
-            return Response({"error": "نام کاربری یا رمز عبور نادرست است."}, status=status.HTTP_400_BAD_REQUEST)
+            return StandardResponse.error(errors="نام کاربری یا رمز عبور نادرست است.", status=status.HTTP_400_BAD_REQUEST)
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
 class UserLogoutView(APIView):
@@ -85,7 +86,7 @@ class UserInfoView(APIView):
     def get(self,request , username):
         user = get_object_or_404(User, username=username)
         serializer = self.serializer_class(user)
-        return Response({"data":serializer.data},status=status.HTTP_200_OK)
+        return StandardResponse.success(data=serializer.data,status=status.HTTP_200_OK)
     
 
 
@@ -95,14 +96,14 @@ class UserChangeView(APIView):
 
     def get(self,request):
         serializer = self.serializer_class(request.user)
-        return Response({"data":serializer.data}, status=status.HTTP_200_OK)
+        return StandardResponse.success(message="اطلاعات گرفته شد.", data=serializer.data, status=status.HTTP_200_OK)
 
     def patch(self,request):
         serializer = self.serializer_class(request.user, data=request.data , partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response({"data":serializer.data})
-        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
+            return StandardResponse.success(message="شما با موفقیت اطلاعات خود بروز کردید.", data=serializer.data, status=status.HTTP_200_OK)
+        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 
@@ -119,13 +120,13 @@ class UserFollowView(APIView):
     def post(self,request, username):
         user = get_object_or_404(User, username=username)
         if request.user == user:
-            return Response({"errors": "شما نمی توانید خود را دنبال کنید."}, status=status.HTTP_400_BAD_REQUEST)
+            return StandardResponse.error(errors="شما نمی توانید خود را دنبال کنید.", status=status.HTTP_400_BAD_REQUEST)
         Follow.objects.get_or_create(follower=request.user , followed=user)
-        return Response({"message": "شما با موفقیت دنبال کردید."}, status=status.HTTP_201_CREATED)
+        return StandardResponse.success(message="شما با موفقیت دنبال کردید.", status=status.HTTP_201_CREATED)
     
     def delete(self,request, username):
         user = get_object_or_404(User, username=username)
         Follow.objects.filter(follower=request.user , followed=user).delete()
-        return Response({"message": "شما با موفقیت از لیست دنبال کننده ها حذف کردید."}, status=status.HTTP_200_OK)
+        return StandardResponse.success(message="شما با موفقیت از لیست دنبال کننده ها حذف کردید.", status=status.HTTP_200_OK)
 
 
