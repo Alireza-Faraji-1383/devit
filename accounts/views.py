@@ -6,7 +6,7 @@ from .models import Follow, User
 from .serializers import   FollowSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer
 from rest_framework_simplejwt.tokens import RefreshToken , TokenError
 from rest_framework import status
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from core.utils.responses import StandardResponse
 from .utils import send_activation_email
 from django.contrib.auth.tokens import default_token_generator
@@ -30,8 +30,6 @@ class TokenRefreshView(APIView):
         except TokenError:
             return Response({'errors': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
         
-
-
 
 class UserRegisterView(APIView):
     serializer_class = UserRegisterSerializer
@@ -66,7 +64,6 @@ class UserSendActivationView(APIView):
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 
-
 class UserActivateView(APIView):
     def get(self, request, uidb64, token):
         try:
@@ -78,9 +75,9 @@ class UserActivateView(APIView):
         if user and default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            return StandardResponse.success(message='حساب شما با موفقیت فعال شد', status=status.HTTP_200_OK)
+            return redirect("http://localhost:5173/verified/")
         else:
-            return StandardResponse.error(errors="کلید فعال شده نامعتبر است.", status=status.HTTP_400_BAD_REQUEST)
+            return redirect("http://localhost:5173/verified-error/")
 
 class UserLoginView(APIView):
     permission_classes = (IsNotAuthenticated,)
@@ -123,8 +120,6 @@ class UserLogoutView(APIView):
         return response
 
 
-
-
 class UserInfoView(APIView):
     permission_classes = (permissions.AllowAny,)
     serializer_class = UserInfoSerializer
@@ -144,7 +139,7 @@ class UserChangeView(APIView):
         serializer = self.serializer_class(request.user)
         return StandardResponse.success(message="اطلاعات گرفته شد.", data=serializer.data, status=status.HTTP_200_OK)
 
-    def patch(self, request):
+    def put(self, request):
         if not request.data:
             return StandardResponse.error(errors="حداثل یک فیلد خود را برای تغیر ارسال کنید.", status=status.HTTP_400_BAD_REQUEST)
         serializer = self.serializer_class(request.user, data=request.data , partial=True)
