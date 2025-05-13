@@ -8,6 +8,10 @@ from rest_framework_simplejwt.tokens import RefreshToken , TokenError
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from core.utils.responses import StandardResponse
+from .utils import send_activation_email
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode
+from core.permissions import IsNotAuthenticated
 
 
 class TokenRefreshView(APIView):
@@ -31,17 +35,55 @@ class TokenRefreshView(APIView):
 
 class UserRegisterView(APIView):
     serializer_class = UserRegisterSerializer
-    permission_classes = (permissions.AllowAny,)
+    permission_classes = (IsNotAuthenticated,)
 
     def post(self,request):
         serializer = self.serializer_class(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return StandardResponse.success(message="شما با موفقیت ثبت نام کردید", status=status.HTTP_201_CREATED)
+            user =serializer.save()
+            user.is_active = False
+            user.save()
+            send_activation_email(user)
+            return StandardResponse.success(message="لطفا ایمیل خود را برسی کنید تا حساب کاربری فعال شود.", status=status.HTTP_201_CREATED)
         return StandardResponse.error(errors= serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class UserSendActivationView(APIView):
+    serializer_class = UserAuthSerializer
+    permission_classes = (IsNotAuthenticated,)
+    def post(self,request):
+        serializer = self.serializer_class(data=request.data)
 
+        if serializer.is_valid():
+            username = serializer.validated_data.get('username')
+            password = serializer.validated_data.get('password')
+            user = authenticate(username=username, password=password)
+
+            if user.is_active:
+                return StandardResponse.error(errors="این کاربر قبلا فعال شده است.", status=status.HTTP_400_BAD_REQUEST)
+
+            send_activation_email(user)
+            return StandardResponse.success(message="ایمیل با موفقیت ارسال شد.", status=status.HTTP_201_CREATED)
+        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+class UserActivateView(APIView):
+    def get(self, request, uidb64, token):
+        try:
+            uid = urlsafe_base64_decode(uidb64).decode()
+            user = get_object_or_404(User, pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save()
+            return StandardResponse.success(message='حساب شما با موفقیت فعال شد', status=status.HTTP_200_OK)
+        else:
+            return StandardResponse.error(errors="کلید فعال شده نامعتبر است.", status=status.HTTP_400_BAD_REQUEST)
 
 class UserLoginView(APIView):
+    permission_classes = (IsNotAuthenticated,)
     serializer_class = UserAuthSerializer
     serializer_show = UserInfoSerializer
 
@@ -54,6 +96,10 @@ class UserLoginView(APIView):
             
             user = authenticate(username=username, password=password)
             if user:
+
+                if not user.is_active:
+                    return StandardResponse.error(errors="حساب کاربری فعال نشده است. به این صفحه بروید : send_activation/", status=status.HTTP_400_BAD_REQUEST)
+
                 refresh = RefreshToken.for_user(user)
                 response = Response({
                     "message": "شما با موفقیت ورود کردید.",
@@ -98,19 +144,14 @@ class UserChangeView(APIView):
         serializer = self.serializer_class(request.user)
         return StandardResponse.success(message="اطلاعات گرفته شد.", data=serializer.data, status=status.HTTP_200_OK)
 
-    def patch(self,request):
+    def patch(self, request):
+        if not request.data:
+            return StandardResponse.error(errors="حداثل یک فیلد خود را برای تغیر ارسال کنید.", status=status.HTTP_400_BAD_REQUEST)
         serializer = self.serializer_class(request.user, data=request.data , partial=True)
         if serializer.is_valid():
             serializer.save()
             return StandardResponse.success(message="شما با موفقیت اطلاعات خود بروز کردید.", data=serializer.data, status=status.HTTP_200_OK)
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-
-
-
-
-
 
 
 class UserFollowView(APIView):
