@@ -14,6 +14,8 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from core.permissions import IsNotAuthenticated
 from django.db.models import Q
+from django.db.models import Prefetch
+
 
 
 class TokenRefreshView(APIView):
@@ -180,5 +182,43 @@ class UserFollowView(APIView):
         user = get_object_or_404(User, username=username)
         Follow.objects.filter(follower=request.user , followed=user).delete()
         return StandardResponse.success(message="شما با موفقیت از لیست دنبال کننده ها حذف کردید.", status=status.HTTP_200_OK)
+    
+
+
+class UserFollowersView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserPreViewSerializer
+    def get(self,request, username):
+        user = get_object_or_404(User,username=username)
+        queryset = User.objects.filter(
+            following__followed=user
+        ).exclude(pk=user.pk).distinct().prefetch_related(
+            Prefetch(
+                'following',
+                queryset=Follow.objects.filter(followed=user),
+                to_attr='my_followers'
+            )
+        )
+        serializer = UserPreViewSerializer(queryset, many=True, context={'request': request})
+        return StandardResponse.success(message="اطلاعات جستجو شد.", data=serializer.data, status=status.HTTP_200_OK)
+    
+
+class UserFollowingView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserPreViewSerializer
+    def get(self,request, username):
+        user = get_object_or_404(User,username=username)
+        queryset = User.objects.filter(
+            followers__follower=user
+        ).exclude(pk=user.pk).distinct().prefetch_related(
+            Prefetch(
+                'followers',
+                queryset=Follow.objects.filter(follower=user),
+                to_attr='my_following'
+            )
+        )
+        serializer = UserPreViewSerializer(queryset, many=True, context={'request': request})
+        return StandardResponse.success(message="اطلاعات جستجو شد.", data=serializer.data, status=status.HTTP_200_OK)
+        
 
 

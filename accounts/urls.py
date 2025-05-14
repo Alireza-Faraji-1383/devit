@@ -2,7 +2,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from django.urls import path
 from .views import (SearchUserView, TokenRefreshView ,UserRegisterView , UserLoginView , UserLogoutView  , UserInfoView ,  UserChangeView 
                     ,UserSendActivationView , UserActivateView
-                    ,UserFollowView 
+                    ,UserFollowView , UserFollowersView , UserFollowingView
 )
 urlpatterns = [
 
@@ -14,8 +14,10 @@ urlpatterns = [
     path('signout/', UserLogoutView.as_view(), name='signout'),
     
     path('me/', UserChangeView.as_view(), name='user'),
-    path('user/<str:username>/', UserInfoView.as_view(), name='user'),
+    path("user/<str:username>/followers/", UserFollowersView.as_view(), name="user_followers"),
+    path("user/<str:username>/following/", UserFollowingView.as_view(), name="user_following"),
     path('user/<str:username>/follow/', UserFollowView.as_view(), name='user_follow'),
+    path('user/<str:username>/', UserInfoView.as_view(), name='user'),
     path('search/<str:search>/', SearchUserView.as_view(), name='search_user'),
     
 

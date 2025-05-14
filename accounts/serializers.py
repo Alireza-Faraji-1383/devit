@@ -16,23 +16,19 @@ class UserRegisterSerializer(serializers.ModelSerializer):
         error_messages={
             'required': 'لطفاً ایمیل را وارد کنید.',
             'invalid': 'فرمت ایمیل وارد شده نادرست است.',
-        }
-    )
-
-
+        })
+    
     class Meta:
         model = User
         fields = ['pk','username','email','password']
         extra_kwargs = {'username': {'required': True},      
                         'password': {'write_only': True , 'required': True},
                         }
-    
-
+        
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
     
-
 
 class UserInfoSerializer(serializers.ModelSerializer):
 
@@ -89,12 +85,14 @@ class UserPreViewSerializer(serializers.ModelSerializer):
         fields = ['username','first_name', 'last_name','avatar','is_follow']
 
     def get_is_follow(self, obj):
+        user = self.context.get('request').user
+
         if self.context.get('request').user.is_anonymous:
             return None
         if self.context.get('request').user == obj:
             return None
-            
-        return obj.following.filter(follower=self.context.get('request').user).exists()
+        
+        return obj.followers.filter(follower=user).exists()
     
 
 class FollowSerializer(serializers.ModelSerializer):
