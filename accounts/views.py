@@ -75,9 +75,9 @@ class UserActivateView(APIView):
         if user and default_token_generator.check_token(user, token):
             user.is_active = True
             user.save()
-            return redirect("http://localhost:5173/verified/")
+            return StandardResponse.success(message="حساب کاربری شما با موفقیت تایید شد.", status=status.HTTP_200_OK)
         else:
-            return redirect("http://localhost:5173/verified-error/")
+            return StandardResponse.error(errors="توکن شما خراب یا منقضی شده است.",status=status.HTTP_400_BAD_REQUEST)
 
 class UserLoginView(APIView):
     permission_classes = (IsNotAuthenticated,)

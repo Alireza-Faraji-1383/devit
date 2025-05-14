@@ -3,11 +3,11 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
 
-def send_activation_email(user, base_url="http://localhost:8000"):
+def send_activation_email(user, base_url="http://localhost:5173"):
     
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    activation_link = f"{base_url}/api/auth/activate/{uid}/{token}/"
+    activation_link = f"{base_url}verified/{uid}/{token}/"
 
     send_mail(
         subject="فعال‌سازی حساب کاربری",
