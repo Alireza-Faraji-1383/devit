@@ -18,16 +18,19 @@ class User(AbstractUser):
 
 
 class Follow(models.Model):
-    follower = models.ForeignKey(User, on_delete=models.CASCADE ,related_name='followers')
-    followed = models.ForeignKey(User, on_delete=models.CASCADE , related_name='following')
-
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
+    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
     created = models.DateTimeField(auto_now_add=True)
 
-    def clean(self):
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['follower', 'followed'], name='unique_follow')
+        ]
+
+    def save(self, *args, **kwargs):
         if self.follower == self.followed:
             raise ValidationError('نمیتونی خودتو فالو کنی')
-        return super().clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        
-        return ' کاربر ' + self.follower.username + ' دنبال کرده از ' + self.followed.username
+        return f'کاربر {self.follower.username} دنبال کرده {self.followed.username}'

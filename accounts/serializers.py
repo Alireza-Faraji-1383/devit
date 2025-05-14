@@ -81,14 +81,21 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
 
 class UserPreViewSerializer(serializers.ModelSerializer):
+
+    is_follow = serializers.SerializerMethodField()
+
     class Meta:
         model = User
         fields = ['username','first_name', 'last_name','avatar','is_follow']
 
-        def get_is_follow(self, obj):
-            return obj.following.filter(pk=self.context.get('user').pk).exists()
+    def get_is_follow(self, obj):
+        if self.context.get('request').user.is_anonymous:
+            return None
+        if self.context.get('request').user == obj:
+            return None
+            
+        return obj.following.filter(follower=self.context.get('request').user).exists()
     
-
 
 class FollowSerializer(serializers.ModelSerializer):
     class Meta:

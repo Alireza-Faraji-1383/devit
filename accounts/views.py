@@ -3,7 +3,8 @@ from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Follow, User
-from .serializers import   FollowSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer
+from .serializers import   (FollowSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer,
+                            UserPreViewSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken , TokenError
 from rest_framework import status
 from django.shortcuts import get_object_or_404, redirect
@@ -12,6 +13,7 @@ from .utils import send_activation_email
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from core.permissions import IsNotAuthenticated
+from django.db.models import Q
 
 
 class TokenRefreshView(APIView):
@@ -71,6 +73,9 @@ class UserActivateView(APIView):
             user = get_object_or_404(User, pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
+
+        if user.is_active:
+            return StandardResponse.error(errors="حساب کاربری شما قبلا فعال شده است.", status=status.HTTP_400_BAD_REQUEST)
 
         if user and default_token_generator.check_token(user, token):
             user.is_active = True
@@ -147,6 +152,17 @@ class UserChangeView(APIView):
             serializer.save()
             return StandardResponse.success(message="شما با موفقیت اطلاعات خود بروز کردید.", data=serializer.data, status=status.HTTP_200_OK)
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class SearchUserView(APIView):
+    permission_classes = (permissions.AllowAny,)
+    serializer_class = UserPreViewSerializer
+    def get(self,request , search):
+        query = search
+        users = User.objects.filter(Q(username__icontains=query))
+        serializer = self.serializer_class(users, many=True, context={'request': request})
+        return StandardResponse.success(message="اطلاعات جستجو شد.", data=serializer.data, status=status.HTTP_200_OK)
+
 
 
 class UserFollowView(APIView):
