@@ -79,6 +79,14 @@ class UserInfoSerializer(serializers.ModelSerializer):
         instance.save()
         return instance
 
+
+class UserPreViewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username','first_name', 'last_name','avatar','is_follow']
+
+        def get_is_follow(self, obj):
+            return obj.following.filter(pk=self.context.get('user').pk).exists()
     
 
 

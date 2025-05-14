@@ -7,7 +7,7 @@ def send_activation_email(user, base_url="http://localhost:5173"):
     
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    activation_link = f"{base_url}verified/{uid}/{token}/"
+    activation_link = f"{base_url}/verified/{uid}/{token}/"
 
     send_mail(
         subject="فعال‌سازی حساب کاربری",
