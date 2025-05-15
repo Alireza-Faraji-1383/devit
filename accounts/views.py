@@ -120,6 +120,7 @@ class UserLoginView(APIView):
     
 
 class UserLogoutView(APIView):
+    permission_classes = [permissions.AllowAny]
     def post(self,request):
         response = Response({"message": "شما با موفقیت خارج شدید."}, status=status.HTTP_200_OK)
         response.delete_cookie("access_token")
