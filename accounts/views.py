@@ -2,14 +2,14 @@ from rest_framework import generics , permissions
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Follow, User
-from .serializers import   (FollowSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer,
-                            UserPreViewSerializer)
+from .models import Follow, User , PasswordResetCode
+from .serializers import   (FollowSerializer, PasswordResetCodeSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer,
+                            UserPreViewSerializer , PasswordResetSerializer)
 from rest_framework_simplejwt.tokens import RefreshToken , TokenError
 from rest_framework import status
 from django.shortcuts import get_object_or_404, redirect
 from core.utils.responses import StandardResponse
-from .utils import send_activation_email
+from .utils import send_activation_email, send_reset_code
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from core.permissions import IsNotAuthenticated
@@ -125,6 +125,49 @@ class UserLogoutView(APIView):
         response.delete_cookie("access_token")
         response.delete_cookie("refresh_token")
         return response
+    
+
+class PasswordResetCodeView(APIView):
+    permission_classes = (IsNotAuthenticated,)
+    serializer_class = PasswordResetCodeSerializer
+
+    def post(self,request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            user = get_object_or_404(User, email=email)
+            latest_code = PasswordResetCode.objects.filter(user=user , is_used=False).order_by('-created').first()
+            if latest_code and not latest_code.is_expired():
+                return StandardResponse.error(errors="لطفا صبر کنید کد قبلی هنوز قابل استفاده است.", status=status.HTTP_429_TOO_MANY_REQUESTS)
+            send_reset_code(user)
+            return StandardResponse.success(message="کد بازیابی رمز عبور به ایمیل شما ارسال شد.", status=status.HTTP_201_CREATED)
+        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+            
+class PasswordResetView(APIView):
+    permission_classes = (IsNotAuthenticated,)
+    serializer_class = PasswordResetSerializer
+
+    def post(self,request):
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data.get('email')
+            user = get_object_or_404(User, email=email)
+            code = serializer.validated_data.get('code')
+            try:
+                latest_code = PasswordResetCode.objects.get(user=user , code=code , is_used=False)
+            except PasswordResetCode.DoesNotExist:
+                return StandardResponse.error(errors="کد اشتباه است", status=status.HTTP_400_BAD_REQUEST)
+
+            if latest_code.is_expired():
+                return StandardResponse.error(errors="کد بازیابی شما منقضی شده است.", status=status.HTTP_400_BAD_REQUEST)
+            
+            latest_code.is_used = True
+            latest_code.save()
+            user.set_password(serializer.validated_data.get('new_password'))
+            user.save()
+            return StandardResponse.success(message="شما با موفقیت رمز عبور خود را تغییر کردید.", status=status.HTTP_200_OK)
+        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class UserInfoView(APIView):

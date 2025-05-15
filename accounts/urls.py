@@ -1,7 +1,7 @@
 from rest_framework_simplejwt.views import TokenRefreshView
 from django.urls import path
 from .views import (SearchUserView, TokenRefreshView ,UserRegisterView , UserLoginView , UserLogoutView  , UserInfoView ,  UserChangeView 
-                    ,UserSendActivationView , UserActivateView
+                    ,UserSendActivationView , UserActivateView , PasswordResetCodeView , PasswordResetView
                     ,UserFollowView , UserFollowersView , UserFollowingView
 )
 urlpatterns = [
@@ -12,6 +12,8 @@ urlpatterns = [
     path('activate/<str:uidb64>/<str:token>/', UserActivateView.as_view(), name='activate'),
     path('signin/', UserLoginView.as_view(), name='signin'),
     path('signout/', UserLogoutView.as_view(), name='signout'),
+    path('password_reset_code/', PasswordResetCodeView.as_view(), name='password_reset_code'),
+    path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
     
     path('me/', UserChangeView.as_view(), name='user'),
     path("user/<str:username>/followers/", UserFollowersView.as_view(), name="user_followers"),

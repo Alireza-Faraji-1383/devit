@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.forms import UserCreationForm, UserChangeForm
-from .models import User , Follow
+from .models import User , Follow , PasswordResetCode
 
 
 
@@ -49,3 +49,4 @@ class CustomUserAdmin(UserAdmin):
 
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Follow)
+admin.site.register(PasswordResetCode)

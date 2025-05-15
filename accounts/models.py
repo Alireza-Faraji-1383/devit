@@ -1,3 +1,6 @@
+from datetime import timedelta
+from django.utils import timezone
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.forms import ValidationError
@@ -14,6 +17,24 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+    
+
+
+class PasswordResetCode(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_code')
+    code = models.CharField(max_length=7 , unique=True)
+    
+    is_used = models.BooleanField(default=False)
+    created = models.DateTimeField(auto_now_add=True)
+
+
+    def is_expired(self):
+        return bool(timezone.now() > (self.created + timedelta(minutes=2)))
+
+    def __str__(self):
+        return self.code + " : " + self.user.username
+
+    
     
 
 

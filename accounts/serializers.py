@@ -95,6 +95,23 @@ class UserPreViewSerializer(serializers.ModelSerializer):
         return obj.followers.filter(follower=user).exists()
     
 
+class PasswordResetCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+
+class PasswordResetSerializer(serializers.Serializer):
+    email = serializers.EmailField(required=True)
+    code = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        new_password = data.get('new_password')
+        confirm_password = data.get('confirm_password')
+        if new_password != confirm_password:
+            raise serializers.ValidationError('تایپ شده رمز عبور ها مطابقت ندارند')
+        return data
+    
+
 class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
