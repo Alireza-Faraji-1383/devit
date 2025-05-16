@@ -59,7 +59,8 @@ class UserSendActivationView(APIView):
             username = serializer.validated_data.get('username')
             password = serializer.validated_data.get('password')
             user = authenticate(username=username, password=password)
-
+            if user is None:
+                return StandardResponse.error(errors="نام کاربری یا رمز عبور نادرست است.", status=status.HTTP_400_BAD_REQUEST)
             if user.is_active:
                 return StandardResponse.error(errors="این کاربر قبلا فعال شده است.", status=status.HTTP_400_BAD_REQUEST)
 
@@ -83,8 +84,8 @@ class UserActivateView(APIView):
             user.is_active = True
             user.save()
             return StandardResponse.success(message="حساب کاربری شما با موفقیت تایید شد.", status=status.HTTP_200_OK)
-        else:
-            return StandardResponse.error(errors="توکن شما خراب یا منقضی شده است.",status=status.HTTP_400_BAD_REQUEST)
+        
+        return StandardResponse.error(errors="توکن شما خراب یا منقضی شده است.",status=status.HTTP_400_BAD_REQUEST)
 
 class UserLoginView(APIView):
     permission_classes = (IsNotAuthenticated,)
