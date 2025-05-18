@@ -18,21 +18,35 @@ from django.db.models import Prefetch
 
 
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
 class TokenRefreshView(APIView):
+    authentication_classes = []
     def post(self, request):
         refresh_token = request.COOKIES.get('refresh_token')
 
         if refresh_token is None:
-            return Response({'errors': 'Refresh token not found'}, status=status.HTTP_401_UNAUTHORIZED)
+            response = Response({'errors': 'هیچ توکنی پیدا نشد. '}, status=status.HTTP_401_UNAUTHORIZED)
+            response.delete_cookie('access_token')
+            response.delete_cookie('refresh_token')
+            return response
 
         try:
             refresh = RefreshToken(refresh_token)
             access_token = str(refresh.access_token)
-            response = Response({'access_token': access_token}, status=status.HTTP_200_OK)
+            response = Response({'message': 'توکن با موفقیت انجام شد.'}, status=status.HTTP_200_OK)
             response.set_cookie('access_token', access_token, httponly=True, samesite='Lax')
             return response
+
         except TokenError:
-            return Response({'errors': 'Invalid or expired refresh token'}, status=status.HTTP_401_UNAUTHORIZED)
+            response = Response({'errors': 'توکن منقضی یا نامعتبر است.'}, status=status.HTTP_401_UNAUTHORIZED)
+            response.delete_cookie('access_token')
+            response.delete_cookie('refresh_token')
+            return response
+
         
 
 class UserRegisterView(APIView):
@@ -103,7 +117,7 @@ class UserLoginView(APIView):
             if user:
 
                 if not user.is_active:
-                    return StandardResponse.error(errors="حساب کاربری فعال نشده است. به این صفحه بروید : send_activation/", status=status.HTTP_400_BAD_REQUEST)
+                    return StandardResponse.error(errors="حساب کاربری فعال نشده است.", status=status.HTTP_409_CONFLICT)
 
                 refresh = RefreshToken.for_user(user)
                 response = Response({
@@ -121,7 +135,8 @@ class UserLoginView(APIView):
     
 
 class UserLogoutView(APIView):
-    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    permission_classes = []
     def post(self,request):
         response = Response({"message": "شما با موفقیت خارج شدید."}, status=status.HTTP_200_OK)
         response.delete_cookie("access_token")
