@@ -192,7 +192,7 @@ class UserInfoView(APIView):
     serializer_class = UserInfoSerializer
     
     def get(self,request , username):
-        user = get_object_or_404(User, username=username)
+        user = get_object_or_404(User, username__iexact=username)
         serializer = self.serializer_class(user)
         return StandardResponse.success(data=serializer.data,status=status.HTTP_200_OK)
     

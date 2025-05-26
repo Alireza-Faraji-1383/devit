@@ -25,6 +25,11 @@ class UserRegisterSerializer(serializers.ModelSerializer):
                         'password': {'write_only': True , 'required': True},
                         }
         
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("این نام کاربری قبلاً ثبت شده است.")
+        return value
+        
     def create(self, validated_data):
         user = User.objects.create_user(**validated_data)
         return user
