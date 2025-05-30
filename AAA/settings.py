@@ -43,7 +43,8 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'corsheaders',
     'drf_spectacular',
-
+    'imagekit',
+    
     # local apps
     'accounts.apps.AccountsConfig',
     'posts.apps.PostsConfig',

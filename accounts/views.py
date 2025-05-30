@@ -15,13 +15,13 @@ from django.utils.http import urlsafe_base64_decode
 from core.permissions import IsNotAuthenticated
 from django.db.models import Q
 from django.db.models import Prefetch
-
-
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+
+
 
 class TokenRefreshView(APIView):
     authentication_classes = []
@@ -90,6 +90,9 @@ class UserActivateView(APIView):
             user = get_object_or_404(User, pk=uid)
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
+        
+        if user == None:
+            return StandardResponse.error(errors="کاربر مورد نظر شما وجود ندارد.", status=status.HTTP_400_BAD_REQUEST)
 
         if user.is_active:
             return StandardResponse.error(errors="حساب کاربری شما قبلا فعال شده است.", status=status.HTTP_400_BAD_REQUEST)
@@ -122,7 +125,7 @@ class UserLoginView(APIView):
                 refresh = RefreshToken.for_user(user)
                 response = Response({
                     "message": "شما با موفقیت ورود کردید.",
-                    "data": self.serializer_show(user).data
+                    "data": self.serializer_show(user , context={"request": request}).data
                 }, status=status.HTTP_200_OK)
 
                 response.set_cookie("access_token", str(refresh.access_token), httponly=True, samesite='Lax')
@@ -196,7 +199,6 @@ class UserInfoView(APIView):
         serializer = self.serializer_class(user)
         return StandardResponse.success(data=serializer.data,status=status.HTTP_200_OK)
     
-
 
 class UserChangeView(APIView):
     permission_classes = (permissions.IsAuthenticated,)

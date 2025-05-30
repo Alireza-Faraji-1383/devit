@@ -1,9 +1,10 @@
 from datetime import timedelta
 from django.utils import timezone
-
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 from django.forms import ValidationError
+from imagekit.models import ProcessedImageField
+from imagekit.processors import ResizeToFit
 
 class User(AbstractUser):
     
@@ -13,7 +14,10 @@ class User(AbstractUser):
     gender = models.CharField(max_length=1, choices=(('M', 'Male'), ('F', 'Female')), blank=True, null=True)
     birthday = models.DateField(blank=True, null=True)
 
-    avatar = models.ImageField(upload_to='avatars/%Y/%m', blank=True, null=True)
+    avatar = ProcessedImageField(upload_to='avatars/%Y/%m', blank=True, null=True, default='default/default_avatar.jpg',
+        processors=[ResizeToFit(600, 600)],
+        format='JPEG',
+        options={'quality': 70},)
 
     def __str__(self):
         return self.username

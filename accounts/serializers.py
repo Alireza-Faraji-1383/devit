@@ -20,7 +20,7 @@ class UserRegisterSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ['pk','username','email','password']
+        fields = ['username','email','password']
         extra_kwargs = {'username': {'required': True},      
                         'password': {'write_only': True , 'required': True},
                         }
@@ -37,12 +37,16 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 class UserInfoSerializer(serializers.ModelSerializer):
 
+    is_follow = serializers.SerializerMethodField()
     followers = serializers.SerializerMethodField()
     following = serializers.SerializerMethodField()
 
+    avatar = serializers.ImageField(required=False)
+
+
     class Meta:
         model = User    
-        fields = ['username','email','password', 'first_name', 'last_name', 'bio', 'gender', 'birthday', 'avatar','followers','following']
+        fields = ['username','email','password', 'first_name', 'last_name', 'bio', 'gender', 'birthday', 'avatar','followers','following','is_follow']
         
         extra_kwargs = {
 
@@ -54,6 +58,15 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
         }
 
+    def get_is_follow(self, obj):
+        user = self.context.get('request').user
+
+        if self.context.get('request').user.is_anonymous:
+            return None
+        if self.context.get('request').user == obj:
+            return None
+        
+        return obj.followers.filter(follower=user).exists()
     def get_followers(self, obj):
         return obj.followers.count()
         
