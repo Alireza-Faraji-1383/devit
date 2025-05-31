@@ -55,6 +55,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
             'email': {'read_only': True},
             'followers': {'read_only': True},
             'following': {'read_only': True},
+            'is_follow': {'read_only': True},
 
         }
 

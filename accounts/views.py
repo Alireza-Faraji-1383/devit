@@ -196,7 +196,7 @@ class UserInfoView(APIView):
     
     def get(self,request , username):
         user = get_object_or_404(User, username__iexact=username)
-        serializer = self.serializer_class(user)
+        serializer = self.serializer_class(user, context={"request": request})
         return StandardResponse.success(data=serializer.data,status=status.HTTP_200_OK)
     
 
@@ -205,7 +205,7 @@ class UserChangeView(APIView):
     serializer_class = UserInfoSerializer
 
     def get(self,request):
-        serializer = self.serializer_class(request.user)
+        serializer = self.serializer_class(request.user, context={"request": request})
         return StandardResponse.success(message="اطلاعات گرفته شد.", data=serializer.data, status=status.HTTP_200_OK)
 
     def put(self, request):
