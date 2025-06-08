@@ -211,7 +211,7 @@ class UserChangeView(APIView):
     def put(self, request):
         if not request.data:
             return StandardResponse.error(errors="حداثل یک فیلد خود را برای تغیر ارسال کنید.", status=status.HTTP_400_BAD_REQUEST)
-        serializer = self.serializer_class(request.user, data=request.data , partial=True)
+        serializer = self.serializer_class(request.user, data=request.data , partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return StandardResponse.success(message="شما با موفقیت اطلاعات خود بروز کردید.", data=serializer.data, status=status.HTTP_200_OK)
