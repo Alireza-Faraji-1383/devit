@@ -15,10 +15,6 @@ from django.utils.http import urlsafe_base64_decode
 from core.permissions import IsNotAuthenticated
 from django.db.models import Q
 from django.db.models import Prefetch
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 
 
 
