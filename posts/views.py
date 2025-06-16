@@ -27,7 +27,7 @@ class PostView(APIView):
     serializer_class = PostViewSerializer
     
     def get(self, request, id , title=None):
-        post = Post.objects.get(id=id)
+        post = get_object_or_404(Post,id=id)
         serializer = self.serializer_class(post)
         return StandardResponse.success(message='اطلاعات پست  با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
 
