@@ -7,6 +7,7 @@ from django.db.models import Q
 from core.permissions import IsNotAuthenticated
 from rest_framework import status
 
+from accounts.models import User
 from .serializers import PostPreViewSerializer , PostViewSerializer , PostCreateSerializer
 from .models import Post , Tag
 
@@ -45,3 +46,14 @@ class PostCreateView(APIView):
             return StandardResponse.success(message='پست با موفقیت ساخته شد.',data=post_data,status=status.HTTP_201_CREATED)
         
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+class UserPostsView(APIView):
+    permission_classes = [permissions.AllowAny]
+    serializer_class = PostPreViewSerializer
+
+    def get(self, request , user):
+        user = get_object_or_404(User, username = user)
+        posts = Post.objects.filter(user=user).order_by('-created')
+        serializer = self.serializer_class(posts, many=True)
+        return StandardResponse.success(message='اطلاعات پست های کاربر با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
