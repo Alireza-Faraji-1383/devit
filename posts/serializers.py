@@ -7,7 +7,7 @@ class PostPreViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id','title','user','tags','main_image','created','updated'
+        fields = ['id','slug','title','user','tags','main_image','created','updated'
                   ]
         
     def to_representation(self, instance):
@@ -22,7 +22,7 @@ class PostViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id','title','user','content','tags','main_image','created','updated']
+        fields = ['id','title','slug','user','content','tags','main_image','created','updated']
 
     def to_representation(self, instance):
         rep = super().to_representation(instance)
@@ -34,16 +34,17 @@ class PostCreateSerializer(serializers.ModelSerializer):
 
     tags = serializers.ListField(
         child=serializers.CharField(max_length=100),
-        write_only=True
+        write_only=True,
     )
 
     class Meta:
         model = Post
-        fields = ['title','content','tags','main_image',]
+        fields = ['title','slug','content','tags','main_image',]
         extra_kwargs = {
 
             'title': {'required': True},
             'content': {'required': True},
+            'slug': {'required': True},
         }
 
     def validate_tags(self, value):

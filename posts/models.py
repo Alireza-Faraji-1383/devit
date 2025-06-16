@@ -9,6 +9,7 @@ import re
 class Post(models.Model):
 
     title = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True,max_length=100)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     main_image = ProcessedImageField(upload_to='posts/%Y/%m', blank=True, null=True,
@@ -35,7 +36,7 @@ class Post(models.Model):
 
 
 def validate_persian_slug(value):
-    pattern = r'^[\w\u0600-\u06FF\-]+$'  # \u0600-\u06FF برای حروف فارسی
+    pattern = r'^[a-zA-Z0-9_\u0600-\u06FF-]+$'  # \u0600-\u06FF برای حروف فارسی
     if not re.match(pattern, value):
         raise ValidationError(
             'تگ فقط می‌تواند شامل حروف فارسی و انگلیسی، اعداد، خط تیره (-) و زیرخط (_) باشد.'
@@ -43,8 +44,8 @@ def validate_persian_slug(value):
 
 
 class Tag(models.Model):
-    title = models.CharField(max_length=100, unique=True)
-    title.validators = [validate_persian_slug,]
+    title = models.CharField(max_length=100, unique=True, validators=[validate_persian_slug])
+
 
     class Meta:
         verbose_name = 'تگ'
