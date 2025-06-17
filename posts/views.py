@@ -8,9 +8,45 @@ from core.permissions import IsNotAuthenticated , IsOwner , IsOwnerOrReadOnly
 from rest_framework import status
 
 from accounts.models import User
-from .serializers import PostPreViewSerializer , PostViewSerializer , PostCreateUpdateSerializer
-from .models import Post , Tag
+from .serializers import PostPreViewSerializer , PostViewSerializer , PostCreateUpdateSerializer , MediaSerializer
+from .models import Post , Tag , Media
 
+
+
+class MediaCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = MediaSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data,context={"request": request})
+        if serializer.is_valid():
+            media = serializer.save()
+            media_data = self.serializer_class(media).data
+            return StandardResponse.success(message='مدیا با موفقیت اضافه شد.',data=media_data,status=status.HTTP_201_CREATED)
+        return StandardResponse.error(errors=serializer.errors , status=status.HTTP_400_BAD_REQUEST)
+
+class MediaView(APIView):
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
+    serializer_class = MediaSerializer
+
+    def get(self , request , slug):
+        media = get_object_or_404(Media,slug=slug)
+        serializer = self.serializer_class(media)
+        return StandardResponse.success(message='اطلاعات مدیا با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
+    
+    def put(self , request , slug):
+        media = get_object_or_404(Media,slug=slug)
+        self.check_object_permissions(request , media)
+        serializer = self.serializer_class(media, data=request.data,context={"request": request})
+
+        if serializer.is_valid():
+            serializer.save()
+            data_show = serializer.data
+            # data_show['media'] = media.media.url
+            return StandardResponse.success(message='اطلاعات مدیا با موفقیت تفیر یافت.',data=data_show,status=status.HTTP_200_OK)
+        return StandardResponse.error(errors=serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+    
 
 
 class PostsView(APIView):

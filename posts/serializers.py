@@ -1,5 +1,29 @@
 from rest_framework import serializers
-from .models import Post , Tag , validate_persian_slug
+from .models import Post , Tag , validate_persian_slug , Media
+
+
+class MediaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Media
+        fields = [
+            'media',
+        ]
+
+        extra_kwargs = {
+
+            'media': {'required': True},
+            'user': {'read_only': True},
+            }
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        return super().create(user=user,**validated_data)
+    
+    def update(self, instance, validated_data):
+        user = self.context['request'].user
+        return super().create(user=user,**validated_data)
+
+
 
 class PostPreViewSerializer(serializers.ModelSerializer):
 

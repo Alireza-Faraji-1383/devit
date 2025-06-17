@@ -5,7 +5,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework import permissions
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
-
+from posts.views import MediaView , MediaCreateView
 
 
 SPECTACULAR_SETTINGS = {
@@ -20,11 +20,17 @@ SPECTACULAR_SETTINGS = {
 
 urlpatterns = [
 
+
     path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 
     path('admin/', admin.site.urls),
     path('api/auth/', include('accounts.urls')),
     path('api/posts/', include('posts.urls')),
+
+
+    # media
+    path('api/media/', MediaCreateView.as_view(),name='create_media'),
+    path('api/media/<str:slug>', MediaView.as_view(),name='media'),
 
     # swagger
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

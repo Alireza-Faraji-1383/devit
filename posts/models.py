@@ -9,7 +9,7 @@ import re
 class Post(models.Model):
 
     title = models.CharField(max_length=100)
-    slug = models.SlugField(unique=True,max_length=100)
+    slug = models.SlugField(unique=True,max_length=100 ,)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     main_image = ProcessedImageField(upload_to='posts/%Y/%m', blank=True, null=True,
@@ -53,3 +53,10 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.title
+    
+
+class Media(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    media = models.FileField(upload_to='media/%Y/%m', blank=True, null=True)
+    slug = models.SlugField(max_length=100 , unique=True , default="media")
+    
