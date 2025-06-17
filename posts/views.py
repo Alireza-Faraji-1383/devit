@@ -42,7 +42,8 @@ class MediaView(APIView):
         if serializer.is_valid():
             serializer.save()
             data_show = serializer.data
-            # data_show['media'] = media.media.url
+            data_show['media'] = media.media.url
+            
             return StandardResponse.success(message='اطلاعات مدیا با موفقیت تفیر یافت.',data=data_show,status=status.HTTP_200_OK)
         return StandardResponse.error(errors=serializer.errors,status=status.HTTP_400_BAD_REQUEST)
 
