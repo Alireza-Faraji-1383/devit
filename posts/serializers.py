@@ -30,7 +30,7 @@ class PostViewSerializer(serializers.ModelSerializer):
         return rep        
 
 
-class PostCreateSerializer(serializers.ModelSerializer):
+class PostCreateUpdateSerializer(serializers.ModelSerializer):
 
     tags = serializers.ListField(
         child=serializers.CharField(max_length=100),
@@ -60,5 +60,17 @@ class PostCreateSerializer(serializers.ModelSerializer):
         for tag_title in tags_data:
             tag, _ = Tag.objects.get_or_create(title=tag_title)
             post.tags.add(tag)
-
         return post
+    
+    def update(self, instance, validated_data):
+        tags_data = validated_data.pop('tags', None)
+        instance = super().update(instance, validated_data)
+
+        if tags_data is not None:
+            instance.tags.clear()
+            for tag_title in tags_data:
+                tag, _ = Tag.objects.get_or_create(title=tag_title)
+                instance.tags.add(tag)
+
+        return instance
+    
