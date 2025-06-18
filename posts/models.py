@@ -58,5 +58,5 @@ class Tag(models.Model):
 class Media(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     media = models.FileField(upload_to='media/%Y/%m', blank=True, null=True)
-    slug = models.SlugField(max_length=100 , unique=True , default="media")
+    # slug = models.SlugField(max_length=100 , unique=True , default="media")
     

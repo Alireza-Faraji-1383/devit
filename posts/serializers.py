@@ -12,7 +12,6 @@ class MediaSerializer(serializers.ModelSerializer):
         extra_kwargs = {
 
             'media': {'required': True},
-            'user': {'read_only': True},
             }
 
     def create(self, validated_data):
