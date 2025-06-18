@@ -16,12 +16,13 @@ class MediaSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context['request'].user
-        return Media.objects.create(user=user,**validated_data)
+        media = Media.objects.create(user=user, **validated_data)
+        return media
     
     def update(self, instance, validated_data):
-        user = self.context['request'].user
-        return Media.objects.update(user=user,**validated_data)
-
+        instance.media = validated_data.get('media', instance.media)
+        instance.save()
+        return instance
 
 
 class PostPreViewSerializer(serializers.ModelSerializer):

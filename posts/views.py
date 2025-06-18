@@ -22,7 +22,6 @@ class MediaCreateView(APIView):
         if serializer.is_valid():
             media = serializer.save()
             data_show = serializer.data
-            data_show['media'] = media.media.url
             return StandardResponse.success(message='مدیا با موفقیت اضافه شد.',data=data_show,status=status.HTTP_201_CREATED)
         return StandardResponse.error(errors=serializer.errors , status=status.HTTP_400_BAD_REQUEST)
 
