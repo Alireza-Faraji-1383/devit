@@ -115,7 +115,7 @@ class UserPostsView(APIView):
     serializer_class = PostPreViewSerializer
 
     def get(self, request , user):
-        user = get_object_or_404(User, username = user)
+        user = get_object_or_404(User, username__iexact = user)
         posts = Post.objects.filter(user=user).order_by('-created')
         serializer = self.serializer_class(posts, many=True)
         return StandardResponse.success(message='اطلاعات پست های کاربر با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
