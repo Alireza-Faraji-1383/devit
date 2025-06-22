@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Post , Tag , validate_persian_slug , Media
 from accounts.serializers import UserPreViewSerializer
+from django.utils.html import strip_tags
+
 
 
 class MediaSerializer(serializers.ModelSerializer):
@@ -28,14 +30,24 @@ class MediaSerializer(serializers.ModelSerializer):
 
 class PostPreViewSerializer(serializers.ModelSerializer):
 
+    summary = serializers.SerializerMethodField()
+
 
     user = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
         model = Post
-        fields = ['id','slug','title','user','tags','main_image','created','updated'
+        fields = ['id','slug','title','user','summary','tags','main_image','created','updated'
                   ]
         
+    def get_summary(self, obj):
+        plain_text = strip_tags(obj.content)
+        summary = plain_text[:75]
+        if len(plain_text) > 75:
+            summary = summary[:75] + ' ... '
+        return summary
+
+
     def to_representation(self, instance):
         rep = super().to_representation(instance)
         rep['tags'] = [tag.title for tag in instance.tags.all()]
