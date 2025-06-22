@@ -71,7 +71,7 @@ class PostView(APIView):
     
     def get(self, request, slug):
         post = get_object_or_404(Post,slug=slug)
-        serializer = self.serializer_show(post)
+        serializer = self.serializer_show(post,context={"request": request})
         return StandardResponse.success(message='اطلاعات پست  با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
 
 
@@ -104,7 +104,7 @@ class PostCreateView(APIView):
         serializer = self.serializer_class(data=request.data,context={"request": request})
         if serializer.is_valid():
             post = serializer.save()
-            post_data = self.serializer_show(post).data
+            post_data = self.serializer_show(post , context={"request": request}).data
             return StandardResponse.success(message='پست با موفقیت ساخته شد.',data=post_data,status=status.HTTP_201_CREATED)
         
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)

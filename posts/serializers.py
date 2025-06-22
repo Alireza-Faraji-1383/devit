@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Post , Tag , validate_persian_slug , Media
+from accounts.serializers import UserPreViewSerializer
 
 
 class MediaSerializer(serializers.ModelSerializer):
@@ -27,6 +28,7 @@ class MediaSerializer(serializers.ModelSerializer):
 
 class PostPreViewSerializer(serializers.ModelSerializer):
 
+
     user = serializers.CharField(source='user.username', read_only=True)
 
     class Meta:
@@ -42,7 +44,7 @@ class PostPreViewSerializer(serializers.ModelSerializer):
 
 class PostViewSerializer(serializers.ModelSerializer):
 
-    user = serializers.CharField(source='user.username', read_only=True)
+    user = UserPreViewSerializer(read_only=True)
 
     class Meta:
         model = Post
