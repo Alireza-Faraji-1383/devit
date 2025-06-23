@@ -1,123 +1,56 @@
-from rest_framework import generics , permissions
-from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework import generics, permissions, status
 from django.shortcuts import get_object_or_404
-from core.utils.responses import StandardResponse
-from django.db.models import Q
-from core.permissions import IsNotAuthenticated , IsOwner , IsOwnerOrReadOnly
-from rest_framework import status
 
+from core.mixins import StandardResponseMixin # Mixin جدید
+from core.permissions import IsOwnerOrReadOnly
 from accounts.models import User
-from .serializers import PostPreViewSerializer , PostViewSerializer , PostCreateUpdateSerializer , MediaSerializer
-from .models import Post , Tag , Media
+
+from .models import Post, Media
+from .serializers import (
+    PostPreViewSerializer,
+    PostViewSerializer,
+    PostCreateUpdateSerializer,
+    MediaSerializer
+)
 
 
+class MediaCreateView(StandardResponseMixin, generics.CreateAPIView):
 
-class MediaCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = MediaSerializer
 
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data,context={"request": request})
-        if serializer.is_valid():
-            media = serializer.save()
-            data_show = serializer.data
-            return StandardResponse.success(message='مدیا با موفقیت اضافه شد.',data=data_show,status=status.HTTP_201_CREATED)
-        return StandardResponse.error(errors=serializer.errors , status=status.HTTP_400_BAD_REQUEST)
 
-# class MediaView(APIView):
-#     permission_classes = [permissions.IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
-#     serializer_class = MediaSerializer
+class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
 
-#     def get(self , request , slug):
-#         media = get_object_or_404(Media,slug=slug)
-#         serializer = self.serializer_class(media)
-#         data_show = serializer.data
-#         data_show['media'] = media.media.url
-        
-#         return StandardResponse.success(message='اطلاعات مدیا با موفقیت ارسال شد.',data=data_show,status=status.HTTP_200_OK)
-    
-#     def put(self , request , slug):
-#         media = get_object_or_404(Media,slug=slug)
-#         self.check_object_permissions(request , media)
-#         serializer = self.serializer_class(media, data=request.data,context={"request": request})
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    queryset = Post.objects.select_related('user').prefetch_related('tags').all().order_by('-created')
 
-#         if serializer.is_valid():
-#             serializer.save()
-#             data_show = serializer.data
-#             data_show['media'] = media.media.url
+    def get_serializer_class(self):
 
-#             return StandardResponse.success(message='اطلاعات مدیا با موفقیت تفیر یافت.',data=data_show,status=status.HTTP_200_OK)
-#         return StandardResponse.error(errors=serializer.errors,status=status.HTTP_400_BAD_REQUEST)
-
-    
+        if self.request.method == 'POST':
+            return PostCreateUpdateSerializer
+        return PostPreViewSerializer
 
 
-class PostsView(APIView):
-    permission_classes = [permissions.AllowAny]
-    serializer_class = PostPreViewSerializer
-    
+class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIView):
 
-    def get(self, request):
-        posts = Post.objects.all().order_by('-created')
-        serializer = self.serializer_class(posts, many=True)
-        return StandardResponse.success(message='اطلاعات پست ها با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
-    
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    queryset = Post.objects.select_related('user').prefetch_related('tags').all()
+    lookup_field = 'slug'
 
-class PostView(APIView):
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly,IsOwnerOrReadOnly]
-    serializer_show = PostViewSerializer
-    serializer_class = PostCreateUpdateSerializer
-    
-    def get(self, request, slug):
-        post = get_object_or_404(Post,slug=slug)
-        serializer = self.serializer_show(post,context={"request": request})
-        return StandardResponse.success(message='اطلاعات پست  با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
+    def get_serializer_class(self):
+        if self.request.method in ['PUT', 'PATCH']:
+            return PostCreateUpdateSerializer
+        return PostViewSerializer
 
 
-    def put(self, request, slug):
-        post = get_object_or_404(Post,slug=slug)
-        user = request.user
-        self.check_object_permissions(request , post)
-        serializer = self.serializer_class(post, data=request.data,partial=True,context={"request": request},)
-        if serializer.is_valid():
-            serializer.save()
-            post_data = self.serializer_show(post).data
-            return StandardResponse.success(message='پست با موفقیت به روز شد.',data=post_data,status=status.HTTP_200_OK)
-        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class UserPostsView(StandardResponseMixin, generics.ListAPIView):
 
-    def delete(self, request, slug):
-        post = get_object_or_404(Post,slug=slug)
-        self.check_object_permissions(request , post)
-        post.delete()
-        return StandardResponse.success(message='پست با موفقیت حذف شد.',status=status.HTTP_200_OK)
-
-
-
-
-class PostCreateView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
-    serializer_class = PostCreateUpdateSerializer
-    serializer_show = PostViewSerializer
-    
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data,context={"request": request})
-        if serializer.is_valid():
-            post = serializer.save()
-            post_data = self.serializer_show(post , context={"request": request}).data
-            return StandardResponse.success(message='پست با موفقیت ساخته شد.',data=post_data,status=status.HTTP_201_CREATED)
-        
-        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-
-class UserPostsView(APIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = PostPreViewSerializer
 
-    def get(self, request , user):
-        user = get_object_or_404(User, username__iexact = user)
-        posts = Post.objects.filter(user=user).order_by('-created')
-        serializer = self.serializer_class(posts, many=True)
-        return StandardResponse.success(message='اطلاعات پست های کاربر با موفقیت ارسال شد.',data=serializer.data,status=status.HTTP_200_OK)
-    
-
+    def get_queryset(self):
+        user_username = self.kwargs['user']
+        user_obj = get_object_or_404(User, username__iexact=user_username)
+        
+        return Post.objects.filter(user=user_obj).select_related('user').prefetch_related('tags').order_by('-created')
