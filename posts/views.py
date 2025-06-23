@@ -70,4 +70,4 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
 
         if profile_owner == requesting_user:
             return base_queryset.select_related('user').prefetch_related('tags').order_by('-created')
-        return base_queryset.filter(status=Post.STATUS_PUBLISHED).select_related('user').prefetch_related('tags').order_by('-created')
+        return base_queryset.filter(status='Published').select_related('user').prefetch_related('tags').order_by('-created')

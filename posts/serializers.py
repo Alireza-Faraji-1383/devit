@@ -32,9 +32,9 @@ class PostPreViewSerializer(serializers.ModelSerializer):
         
     def get_summary(self, obj):
         plain_text = strip_tags(obj.content)
-        summary = plain_text[:75]
-        if len(plain_text) > 75:
-            summary = summary[:75] + ' ... '
+        summary = plain_text[:150]
+        if len(plain_text) > 150:
+            summary = summary[:150] + ' ... '
         return summary
 
 class PostViewSerializer(serializers.ModelSerializer):
