@@ -28,7 +28,7 @@ class PostPreViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'slug', 'title', 'user', 'summary', 'tags', 'main_image', 'created', 'updated']
+        fields = ['id', 'slug', 'title', 'user', 'summary', 'tags', 'main_image','status', 'created', 'updated']
         
     def get_summary(self, obj):
         plain_text = strip_tags(obj.content)
@@ -43,7 +43,7 @@ class PostViewSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['id', 'title', 'slug', 'user', 'content', 'tags', 'main_image', 'created', 'updated']
+        fields = ['id', 'title', 'slug', 'user', 'content', 'tags','status', 'main_image', 'created', 'updated']
 
 class PostCreateUpdateSerializer(serializers.ModelSerializer):
     tags = serializers.ListField(
@@ -54,7 +54,7 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Post
-        fields = ['title', 'slug', 'content', 'tags', 'main_image']
+        fields = ['title', 'slug', 'content', 'tags', 'main_image' , 'status']
         extra_kwargs = {
             'title': {'required': True},
             'content': {'required': True},

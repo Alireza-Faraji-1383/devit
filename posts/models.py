@@ -21,6 +21,7 @@ class Post(models.Model):
     content = models.TextField()
 
     tags = models.ManyToManyField('Tag', related_name='posts' , blank=True)
+    status = models.CharField(max_length=50,choices=(('Published','منتشر شده'),('Pending','منتظر انتشار')),default='Pending')
 
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
@@ -32,6 +33,10 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title +  " توسط " + self.user.username
+    
+    def save(self, *args, **kwargs):
+        self.slug = self.slug.lower()
+        super().save(*args, **kwargs)
     
 
 
