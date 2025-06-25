@@ -58,7 +58,23 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.title
-    
+
+class LikePost(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    post = models.ForeignKey(Post, on_delete=models.CASCADE ,related_name='likes')
+    created = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'لایک'
+        verbose_name_plural = 'لایک ها'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'post'], name='unique_like_per_user_post')
+        ]
+        ordering = ['-created']
+
+    def __str__(self):
+        return self.user.username +  ' پست ' + self.post.title +' لایک کرده است.'
+
 
 class Media(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

@@ -26,9 +26,12 @@ class PostPreViewSerializer(serializers.ModelSerializer):
     user = UserPreViewSerializer(read_only=True)
     tags = serializers.StringRelatedField(many=True, read_only=True)
 
+    likes_count = serializers.IntegerField(read_only=True)
+    is_like = serializers.BooleanField(read_only=True , allow_null=True)
+
     class Meta:
         model = Post
-        fields = ['id', 'slug', 'title', 'user', 'summary', 'tags', 'main_image','status', 'created', 'updated']
+        fields = ['id', 'slug', 'title', 'user', 'summary', 'tags', 'main_image','status','likes_count','is_like', 'created', 'updated']
         
     def get_summary(self, obj):
         plain_text = strip_tags(obj.content)
@@ -41,9 +44,12 @@ class PostViewSerializer(serializers.ModelSerializer):
     user = UserPreViewSerializer(read_only=True)
     tags = serializers.StringRelatedField(many=True, read_only=True)
 
+    likes_count = serializers.IntegerField(read_only=True)
+    is_like = serializers.BooleanField(read_only=True,allow_null=True)
+
     class Meta:
         model = Post
-        fields = ['id', 'title', 'slug', 'user', 'content', 'tags','status', 'main_image', 'created', 'updated']
+        fields = ['id', 'title', 'slug', 'user', 'content', 'tags','status', 'main_image','likes_count','is_like', 'created', 'updated']
 
 class PostCreateUpdateSerializer(serializers.ModelSerializer):
     tags = serializers.ListField(

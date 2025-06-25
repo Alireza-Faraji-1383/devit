@@ -1,12 +1,18 @@
+from django.db import IntegrityError
 from rest_framework import generics, permissions, status
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
+from django.db.models import Count, Exists, OuterRef
+from rest_framework.views import APIView
+from django.db import models
+
 
 from core.mixins import StandardResponseMixin # Mixin جدید
 from core.permissions import IsOwnerOrReadOnly
 from accounts.models import User
+from core.utils.responses import StandardResponse
 
-from .models import Post, Media
+from .models import Post, Media , LikePost
 from .serializers import (
     PostPreViewSerializer,
     PostViewSerializer,
@@ -24,7 +30,20 @@ class MediaCreateView(StandardResponseMixin, generics.CreateAPIView):
 class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
-    queryset = Post.objects.filter(status='Published').select_related('user').prefetch_related('tags').all().order_by('-created')
+    def get_queryset(self):
+        user = self.request.user
+        base_queryset = Post.objects.filter(status='Published')
+
+        if user.is_authenticated:
+            is_like_query = Exists(LikePost.objects.filter(post=OuterRef('pk'),user=user))
+        else:
+            is_like_query = models.Value(None, output_field=models.BooleanField())
+        
+        return base_queryset.annotate(
+            likes_count=Count('likes',distinct=True),
+            is_like = is_like_query
+            ).select_related('user').prefetch_related('tags').all().order_by('-created')
+        
 
     def get_serializer_class(self):
 
@@ -41,15 +60,23 @@ class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIVie
 
     def get_queryset(self):
         user = self.request.user
+        base_queryset = Post.objects.all()
         
-        base_queryset = Post.objects.select_related('user').prefetch_related('tags')
-
         if user.is_authenticated:
-            return base_queryset.filter(
+            base_queryset =  base_queryset.filter(
                 Q(status='Published') | Q(user=user)
             ).distinct()
+
+            is_like_query = Exists(LikePost.objects.filter(post=OuterRef('pk'),user=user))
+        else:
+            base_queryset = base_queryset.filter(status='Published')
+            is_like_query = models.Value(None, output_field=models.BooleanField())
         
-        return base_queryset.filter(status='Published')
+        return base_queryset.annotate(
+            likes_count=Count('likes',distinct=True),
+            is_like = is_like_query
+            ).select_related('user').prefetch_related('tags')
+         
         
 
     def get_serializer_class(self):
@@ -65,9 +92,43 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
 
     def get_queryset(self):
         profile_owner = get_object_or_404(User, username__iexact=self.kwargs['user'])
-        requesting_user = self.request.user
+        user = self.request.user
         base_queryset = Post.objects.filter(user=profile_owner)
 
-        if profile_owner == requesting_user:
-            return base_queryset.select_related('user').prefetch_related('tags').order_by('-created')
-        return base_queryset.filter(status='Published').select_related('user').prefetch_related('tags').order_by('-created')
+        if profile_owner == user:
+            base_queryset = base_queryset.all()
+        else:
+            base_queryset =  base_queryset.filter(status='Published')
+
+        if user.is_authenticated:
+            is_like_query = Exists(LikePost.objects.filter(post=OuterRef('pk'),user=user))
+        else:
+            is_like_query = models.Value(None, output_field=models.BooleanField())
+        
+        return base_queryset.annotate(
+            likes_count=Count('likes',distinct=True),
+            is_like = is_like_query
+            ).select_related('user').prefetch_related('tags').order_by('-created')
+    
+
+
+class PostLikeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, slug):
+        post = get_object_or_404(Post, slug=slug)
+        user = request.user
+        try:
+            like = LikePost.objects.create(user=user, post=post)
+            return StandardResponse.success(message='شما پست را لایک کردید',status=status.HTTP_200_OK)
+        except IntegrityError:
+            return StandardResponse.error(message='',errors='شما قبلا این پست را لایک کردید',status=status.HTTP_400_BAD_REQUEST)
+        
+    def delete(self,request, slug):
+        post = get_object_or_404(Post, slug=slug)
+        user = request.user
+        deleted_count, _ = LikePost.objects.filter(user=user, post=post).delete()
+        if deleted_count > 0:
+            return StandardResponse.success(message='شما لایک پست را حذف کردید',status=status.HTTP_200_OK)
+        else:
+            return StandardResponse.error(message='شما این پست را لایک نکرده بودید.', status=status.HTTP_404_NOT_FOUND)

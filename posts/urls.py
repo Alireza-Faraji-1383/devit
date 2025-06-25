@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import  MediaCreateView , PostDetailView , PostListCreateView , UserPostsView
+from .views import  MediaCreateView , PostDetailView , PostListCreateView , UserPostsView , PostLikeView
 
 urlpatterns = [
 
@@ -18,4 +18,7 @@ urlpatterns = [
     # URL برای نمایش پست‌های یک کاربر خاص
     # GET /api/posts/user/<username>/
     path('user/<str:user>/', UserPostsView.as_view(), name='user-posts-list'),
+
+
+    path('<slug:slug>/like',PostLikeView.as_view(),name='post_like')
 ]
