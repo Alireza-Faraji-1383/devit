@@ -11,6 +11,7 @@ from core.mixins import StandardResponseMixin # Mixin جدید
 from core.permissions import IsOwnerOrReadOnly
 from accounts.models import User
 from core.utils.responses import StandardResponse
+from rest_framework import filters
 
 from .models import Post, Media , LikePost
 from .serializers import (
@@ -30,6 +31,12 @@ class MediaCreateView(StandardResponseMixin, generics.CreateAPIView):
 class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'content', 'tags__title']
+    ordering_fields = ['created', 'likes_count']
+    ordering = ['-created']
+
     def get_queryset(self):
         user = self.request.user
         base_queryset = Post.objects.filter(status='Published')
