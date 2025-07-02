@@ -48,7 +48,6 @@ INSTALLED_APPS = [
     # local apps
     'accounts.apps.AccountsConfig',
     'posts.apps.PostsConfig',
-    'reeactions.apps.ReeactionsConfig',
 ]
 
 MIDDLEWARE = [

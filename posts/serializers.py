@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Post, Tag, Media, validate_persian_slug
+from .models import Post, Tag, Media, validate_persian_slug , Comment , VoteComment
 from accounts.serializers import UserPreViewSerializer
 from django.utils.html import strip_tags
 
@@ -99,3 +99,50 @@ class PostCreateUpdateSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         self._handle_tags(instance, tags_data)
         return instance
+    
+
+
+class CommentCreateUpdateSerializer(serializers.ModelSerializer):
+    parent = serializers.PrimaryKeyRelatedField(
+        queryset=Comment.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Comment
+        fields = ['content', 'parent']
+
+
+class ReplySerializer(serializers.ModelSerializer):
+    user = UserPreViewSerializer(read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)
+    dislikes_count = serializers.IntegerField(read_only=True)
+    user_vote = serializers.IntegerField(read_only=True, allow_null=True)
+
+    class Meta:
+        model = Comment
+        fields = [
+            'id', 'user', 'content', 'created', 'parent',
+            'likes_count', 'dislikes_count', 'user_vote'
+        ]
+
+
+class CommentSerializer(serializers.ModelSerializer):
+    user = UserPreViewSerializer(read_only=True)
+    likes_count = serializers.IntegerField(read_only=True)
+    dislikes_count = serializers.IntegerField(read_only=True)
+    user_vote = serializers.IntegerField(read_only=True, allow_null=True)
+    replies = ReplySerializer(many=True, read_only=True)
+    replies_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Comment
+        fields = [
+            'id', 'user', 'content', 'created', 'parent',
+            'likes_count', 'dislikes_count', 'user_vote',
+            'replies_count', 'replies'
+        ]
+    
+    def get_replies_count(self, obj):
+        return obj.replies.count()
