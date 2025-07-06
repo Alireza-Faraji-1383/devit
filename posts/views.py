@@ -36,7 +36,7 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'content', 'tags__title']
+    search_fields = ['title', 'content','slug', 'tags__title']
     ordering_fields = ['created', 'likes_count','updated']
     ordering = ['-created']
 
@@ -101,7 +101,7 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
     serializer_class = PostPreViewSerializer
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['title', 'content', 'tags__title']
+    search_fields = ['title', 'content','slug', 'tags__title']
     ordering_fields = ['created', 'likes_count','updated']
     ordering = ['-created']
 
