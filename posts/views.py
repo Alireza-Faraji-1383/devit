@@ -100,6 +100,11 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
     serializer_class = PostPreViewSerializer
 
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'content', 'tags__title']
+    ordering_fields = ['created', 'likes_count']
+    ordering = ['-created']
+
     def get_queryset(self):
         profile_owner = get_object_or_404(User, username__iexact=self.kwargs['user'])
         user = self.request.user
