@@ -13,7 +13,7 @@ from accounts.models import User
 from core.utils.responses import StandardResponse
 from rest_framework import filters
 
-from .models import Post, Media , LikePost , Comment , VoteComment
+from .models import Post, Media , LikePost , Comment , VoteComment , SavedPost
 from .serializers import (
     PostPreViewSerializer,
     PostViewSerializer,
@@ -41,20 +41,8 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
     ordering = ['-created']
 
     def get_queryset(self):
-        user = self.request.user
-        base_queryset = Post.objects.filter(status='Published')
-
-        if user.is_authenticated:
-            is_like_query = Exists(LikePost.objects.filter(post=OuterRef('pk'),user=user))
-        else:
-            is_like_query = models.Value(None, output_field=models.BooleanField())
+        return Post.objects.with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
         
-        return base_queryset.annotate(
-            likes_count=Count('likes',distinct=True),
-            is_like = is_like_query
-            ).select_related('user').prefetch_related('tags').all().order_by('-created')
-        
-
     def get_serializer_class(self):
 
         if self.request.method == 'POST':
@@ -69,26 +57,8 @@ class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIVie
     lookup_field = 'slug'
 
     def get_queryset(self):
-        user = self.request.user
-        base_queryset = Post.objects.all()
+        return Post.objects.visible_to(self.request.user).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
         
-        if user.is_authenticated:
-            base_queryset =  base_queryset.filter(
-                Q(status='Published') | Q(user=user)
-            ).distinct()
-
-            is_like_query = Exists(LikePost.objects.filter(post=OuterRef('pk'),user=user))
-        else:
-            base_queryset = base_queryset.filter(status='Published')
-            is_like_query = models.Value(None, output_field=models.BooleanField())
-        
-        return base_queryset.annotate(
-            likes_count=Count('likes',distinct=True),
-            is_like = is_like_query
-            ).select_related('user').prefetch_related('tags')
-         
-        
-
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
             return PostCreateUpdateSerializer
@@ -107,23 +77,12 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
 
     def get_queryset(self):
         profile_owner = get_object_or_404(User, username__iexact=self.kwargs['user'])
-        user = self.request.user
-        base_queryset = Post.objects.filter(user=profile_owner)
-
-        if profile_owner == user:
-            base_queryset = base_queryset.all()
-        else:
-            base_queryset =  base_queryset.filter(status='Published')
-
-        if user.is_authenticated:
-            is_like_query = Exists(LikePost.objects.filter(post=OuterRef('pk'),user=user))
-        else:
-            is_like_query = models.Value(None, output_field=models.BooleanField())
         
-        return base_queryset.annotate(
-            likes_count=Count('likes',distinct=True),
-            is_like = is_like_query
-            ).select_related('user').prefetch_related('tags').order_by('-created')
+        base_queryset = Post.objects.filter(user=profile_owner)
+        if profile_owner != self.request.user:
+            base_queryset = base_queryset.filter(status=Post.STATUS_PUBLISHED)
+        
+        return base_queryset.with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags').order_by('-created')
     
 
 
@@ -148,6 +107,32 @@ class PostLikeView(APIView):
         else:
             return StandardResponse.error(message='شما این پست را لایک نکرده بودید.', status=status.HTTP_404_NOT_FOUND)
         
+
+class PostSaveToggleView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, slug):
+        post = get_object_or_404(Post, slug=slug)
+        _, created = SavedPost.objects.get_or_create(user=request.user, post=post)
+        if not created:
+            return StandardResponse.error(message="این پست قبلاً ذخیره شده است.", status=status.HTTP_409_CONFLICT)
+        return StandardResponse.success(message="پست با موفقیت ذخیره شد.", status=status.HTTP_201_CREATED)
+
+    def delete(self, request, slug):
+        post = get_object_or_404(Post, slug=slug)
+        deleted_count, _ = SavedPost.objects.filter(user=request.user, post=post).delete()
+        if deleted_count == 0:
+            return StandardResponse.error(message="این پست در لیست شما وجود نداشت.", status=status.HTTP_404_NOT_FOUND)
+        return StandardResponse.success(message="پست با موفقیت حذف شد.", status=status.HTTP_200_OK)
+
+class SavedPostListView(StandardResponseMixin, generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = PostPreViewSerializer
+
+    def get_queryset(self):
+        return Post.objects.filter(
+            saved_by__user=self.request.user
+        ).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags').order_by('-saved_by__created').distinct()
 
 
 class CommentListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
