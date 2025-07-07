@@ -26,7 +26,7 @@ class PostQuerySet(models.QuerySet):
         
         return self.annotate(
             likes_count=Count('likes', distinct=True),
-            is_liked=is_liked_value
+            is_like=is_liked_value
         )
 
     def with_saved_status(self, user):
