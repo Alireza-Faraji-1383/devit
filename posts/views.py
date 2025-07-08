@@ -2,7 +2,7 @@ from django.db import IntegrityError
 from rest_framework import generics, permissions, status
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
-from django.db.models import Count, Exists, OuterRef
+from django.db.models import Count, Exists, OuterRef , Prefetch
 from rest_framework.views import APIView
 from django.db import models
 
@@ -141,11 +141,27 @@ class CommentListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
     def get_queryset(self):
         post_slug = self.kwargs.get('slug')
         post = get_object_or_404(Post, slug=post_slug)
+        user = self.request.user
+
+        replies_queryset = Comment.objects.with_votes(
+            user
+        ).select_related(
+            'user'
+        ).prefetch_related(
+            'replies'
+        )
+        prefetch_replies = Prefetch('replies', queryset=replies_queryset)
+
         return Comment.objects.filter(
-            post=post, parent__isnull=True
+            post=post,
+            parent__isnull=True
         ).with_votes(
-            self.request.user
-        ).select_related('user').prefetch_related('replies__user')
+            user
+        ).select_related(
+            'user'
+        ).prefetch_related(
+            prefetch_replies
+        )
 
     def get_serializer_class(self):
         if self.request.method == 'POST':

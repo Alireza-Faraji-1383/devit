@@ -122,12 +122,13 @@ class ReplySerializer(serializers.ModelSerializer):
     likes_count = serializers.IntegerField(read_only=True)
     dislikes_count = serializers.IntegerField(read_only=True)
     user_vote = serializers.IntegerField(read_only=True, allow_null=True)
+    replies_count = serializers.IntegerField(source='replies.count', read_only=True)
 
     class Meta:
         model = Comment
         fields = [
             'id', 'user', 'content', 'created', 'parent',
-            'likes_count', 'dislikes_count', 'user_vote'
+            'likes_count', 'dislikes_count','replies_count', 'user_vote'
         ]
 
 
