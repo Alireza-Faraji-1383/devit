@@ -72,7 +72,7 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'content','slug', 'tags__title']
-    ordering_fields = ['created', 'likes_count','updated']
+    ordering_fields = ['created', 'likes_count','updated','status']
     ordering = ['-created']
 
     def get_queryset(self):
