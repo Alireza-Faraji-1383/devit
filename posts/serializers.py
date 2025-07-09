@@ -150,3 +150,11 @@ class CommentSerializer(serializers.ModelSerializer):
     
     def get_replies_count(self, obj):
         return obj.replies.count()
+    
+
+class TagListSerializer(serializers.ModelSerializer):
+    posts_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Tag
+        fields = ['title', 'posts_count']

@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import  (MediaCreateView , PostDetailView , PostListCreateView , UserPostsView , PostLikeView
                      ,CommentDetailView , CommentListCreateView , CommentVoteView ,CommentRepliesListView
-                     ,PostSaveToggleView , SavedPostListView
+                     ,PostSaveToggleView , SavedPostListView , PostTagListView , TagListView
                      )
 
 urlpatterns = [
@@ -12,6 +12,8 @@ urlpatterns = [
     path('media/create/', MediaCreateView.as_view(), name='media-create'),
     path('user/<str:user>/', UserPostsView.as_view(), name='user-posts-list'),
 
+    path('tags/', TagListView.as_view(), name='tag-list'),
+    path('tags/<str:tag>/', PostTagListView.as_view(), name='post-tag-list'),
     
     path('<slug:slug>/', PostDetailView.as_view(), name='post-detail'),
     path('<slug:slug>/like/', PostLikeView.as_view(), name='post-like-toggle'),

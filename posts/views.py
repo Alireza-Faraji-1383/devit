@@ -13,7 +13,7 @@ from accounts.models import User
 from core.utils.responses import StandardResponse
 from rest_framework import filters
 
-from .models import Post, Media , LikePost , Comment , VoteComment , SavedPost
+from .models import Post, Media , LikePost , Comment, Tag , VoteComment , SavedPost
 from .serializers import (
     PostPreViewSerializer,
     PostViewSerializer,
@@ -21,7 +21,8 @@ from .serializers import (
     MediaSerializer,
     CommentSerializer,
     ReplySerializer,
-    CommentCreateUpdateSerializer
+    CommentCreateUpdateSerializer,
+    TagListSerializer
 )
 
 
@@ -222,3 +223,44 @@ class CommentRepliesListView(StandardResponseMixin, generics.ListAPIView):
         ).with_votes(
             self.request.user
         ).select_related('user').prefetch_related('replies__user')
+    
+
+class TagListView(generics.ListAPIView):
+
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+    serializer_class = TagListSerializer
+
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title']
+    ordering_fields = ['created', 'likes_count','updated','posts_count']
+    ordering = ['-created']
+
+    ordering = ['-posts_count'] 
+
+    def get_queryset(self):
+
+        published_posts_count = Count('posts',filter=Q(posts__status=Post.STATUS_PUBLISHED))
+        return Tag.objects.annotate(
+            posts_count=published_posts_count
+        ).filter(posts_count__gt=0 )
+        
+    
+class PostTagListView(StandardResponseMixin, generics.ListAPIView):
+
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    serializer_class = PostPreViewSerializer
+
+    filter_backends = [filters.OrderingFilter]
+
+    ordering_fields = ['created', 'likes_count','updated']
+    ordering = ['-created']
+
+    def get_queryset(self):
+        tag_name = self.kwargs.get('tag')
+        
+        base_queryset = Post.objects.visible_to(self.request.user).with_likes(self.request.use).with_saved_status(self.request.user)
+        
+        if tag_name:
+            base_queryset = base_queryset.filter(tags__title__iexact=tag_name)
+        
+        return base_queryset.select_related('user').prefetch_related('tags').distinct()
