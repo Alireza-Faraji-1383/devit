@@ -42,7 +42,7 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
     ordering = ['-created']
 
     def get_queryset(self):
-        return Post.objects.with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
+        return Post.objects.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
         
     def get_serializer_class(self):
 
@@ -232,8 +232,7 @@ class TagListView(generics.ListAPIView):
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title']
-    ordering_fields = ['created', 'likes_count','updated','posts_count']
-    ordering = ['-created']
+    ordering_fields = ['title','posts_count']
 
     ordering = ['-posts_count'] 
 
@@ -257,10 +256,5 @@ class PostTagListView(StandardResponseMixin, generics.ListAPIView):
 
     def get_queryset(self):
         tag_name = self.kwargs.get('tag')
-        
-        base_queryset = Post.objects.visible_to(self.request.user).with_likes(self.request.use).with_saved_status(self.request.user)
-        
-        if tag_name:
-            base_queryset = base_queryset.filter(tags__title__iexact=tag_name)
-        
-        return base_queryset.select_related('user').prefetch_related('tags').distinct()
+        search = Post.objects.filter(tags__title__iexact=tag_name)
+        return search.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
