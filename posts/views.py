@@ -13,7 +13,7 @@ from accounts.models import User
 from core.utils.responses import StandardResponse
 from rest_framework import filters
 
-from .models import Post, Media , LikePost , Comment, Tag , VoteComment , SavedPost
+from .models import Post, Media , LikePost , Comment, Tag , VoteComment , SavedPost , PostView
 from .serializers import (
     PostPreViewSerializer,
     PostViewSerializer,
@@ -42,7 +42,7 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
     ordering = ['-created']
 
     def get_queryset(self):
-        return Post.objects.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
+        return Post.objects.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags')
         
     def get_serializer_class(self):
 
@@ -58,8 +58,17 @@ class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIVie
     lookup_field = 'slug'
 
     def get_queryset(self):
-        return Post.objects.visible_to(self.request.user).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
-        
+        return Post.objects.visible_to(self.request.user).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags')
+    
+    def retrieve(self, request, *args, **kwargs):
+
+        instance = self.get_object()
+        if request.user.is_authenticated:
+            PostView.objects.get_or_create(user=request.user, post=instance)
+            
+        serializer = self.get_serializer(instance)
+        return StandardResponse.success(message='پست با موفقیت بازیابی شد', data=serializer.data, status=status.HTTP_200_OK)
+
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
             return PostCreateUpdateSerializer
@@ -133,7 +142,7 @@ class SavedPostListView(StandardResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         return Post.objects.filter(
             saved_by__user=self.request.user
-        ).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags').order_by('-saved_by__created').distinct()
+        ).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags').order_by('-saved_by__created').distinct()
 
 
 class CommentListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
@@ -257,4 +266,4 @@ class PostTagListView(StandardResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         tag_name = self.kwargs.get('tag')
         search = Post.objects.filter(tags__title__iexact=tag_name)
-        return search.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags')
+        return search.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags')

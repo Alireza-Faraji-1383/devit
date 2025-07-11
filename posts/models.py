@@ -36,6 +36,12 @@ class PostQuerySet(models.QuerySet):
             is_saved_subquery = SavedPost.objects.filter(post=OuterRef('pk'), user=user)
             is_saved_value = Exists(is_saved_subquery)
         return self.annotate(is_saved=is_saved_value)
+    
+    def with_view_count(self):
+        """ تعداد مشاهده های پست را به کوئری اضافه می‌کند."""
+        return self.annotate(
+            view_count=Count('views', distinct=True)
+        )
 
 class PostManager(models.Manager):
     def get_queryset(self):
@@ -49,6 +55,9 @@ class PostManager(models.Manager):
 
     def with_saved_status(self, user):
         return self.get_queryset().with_saved_status(user)
+    
+    def with_view_count(self):
+        return self.get_queryset().with_view_count()
 
 
 class Post(models.Model):
@@ -210,3 +219,21 @@ class SavedPost(models.Model):
 
     def __str__(self):
         return f'{self.user.username} سیو کرد پست "{self.post.title}"'
+
+
+
+class PostView(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='post_views')
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='views')
+    viewed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'بازدید پست'
+        verbose_name_plural = ' بازدید پست ها'
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'post'], name='unique_view_per_user_post')
+        ]
+        ordering = ['-viewed_at']
+
+    def __str__(self):
+        return f'{self.user.username} بازدید کرد پست  "{self.post.title}"'
