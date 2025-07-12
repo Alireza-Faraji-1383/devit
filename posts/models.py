@@ -38,9 +38,15 @@ class PostQuerySet(models.QuerySet):
         return self.annotate(is_saved=is_saved_value)
     
     def with_view_count(self):
-        """ تعداد مشاهده های پست را به کوئری اضافه می‌کند."""
+        """ تعداد کامنت های پست را به کوئری اضافه می‌کند."""
         return self.annotate(
             view_count=Count('views', distinct=True)
+        )
+    
+
+    def with_comments_count(self):
+        return self.annotate(
+            comments_count=Count('comments', distinct=True)
         )
 
 class PostManager(models.Manager):
@@ -58,6 +64,9 @@ class PostManager(models.Manager):
     
     def with_view_count(self):
         return self.get_queryset().with_view_count()
+    
+    def with_comments_count(self):
+        return self.get_queryset().with_comments_count()
 
 
 class Post(models.Model):
@@ -183,7 +192,7 @@ class Comment(models.Model):
         ordering = ['created']
 
     def __str__(self):
-        return f'Comment by {self.user.username} on post "{self.post.title}"'
+        return f'کامنت توسط {self.user.username} در پست "{self.post.title}"'
 
 
 class VoteComment(models.Model):

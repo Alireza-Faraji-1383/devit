@@ -42,7 +42,8 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
     ordering = ['-created']
 
     def get_queryset(self):
-        return Post.objects.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags')
+        return Post.objects.filter(
+            status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().with_comments_count().select_related('user').prefetch_related('tags')
         
     def get_serializer_class(self):
 
@@ -58,7 +59,8 @@ class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIVie
     lookup_field = 'slug'
 
     def get_queryset(self):
-        return Post.objects.visible_to(self.request.user).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags')
+        return Post.objects.visible_to(
+            self.request.user).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().with_comments_count().select_related('user').prefetch_related('tags')
     
     def retrieve(self, request, *args, **kwargs):
 
@@ -92,7 +94,7 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
         if profile_owner != self.request.user:
             base_queryset = base_queryset.filter(status=Post.STATUS_PUBLISHED)
         
-        return base_queryset.with_likes(self.request.user).with_saved_status(self.request.user).select_related('user').prefetch_related('tags').order_by('-created')
+        return base_queryset.with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().with_comments_count().select_related('user').prefetch_related('tags').order_by('-created')
     
 
 
@@ -266,4 +268,5 @@ class PostTagListView(StandardResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         tag_name = self.kwargs.get('tag')
         search = Post.objects.filter(tags__title__iexact=tag_name)
-        return search.filter(status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().select_related('user').prefetch_related('tags')
+        return search.filter(
+            status=Post.STATUS_PUBLISHED).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().with_comments_count().select_related('user').prefetch_related('tags')
