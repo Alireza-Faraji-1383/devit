@@ -2,6 +2,9 @@ from rest_framework import generics , permissions
 from django.contrib.auth import authenticate
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import filters
+
+from core.mixins import StandardResponseMixin
 from .models import Follow, User , PasswordResetCode
 from .serializers import   (FollowSerializer, PasswordResetCodeSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer,
                             UserPreViewSerializer , PasswordResetSerializer)
@@ -62,9 +65,9 @@ class UserRegisterView(APIView):
 class UserSendActivationView(APIView):
     serializer_class = UserAuthSerializer
     permission_classes = (IsNotAuthenticated,)
+
     def post(self,request):
         serializer = self.serializer_class(data=request.data)
-
         if serializer.is_valid():
             username = serializer.validated_data.get('username')
             password = serializer.validated_data.get('password')
@@ -80,6 +83,7 @@ class UserSendActivationView(APIView):
     
 
 class UserActivateView(APIView):
+
     def get(self, request, uidb64, token):
         try:
             uid = urlsafe_base64_decode(uidb64).decode()
@@ -119,9 +123,10 @@ class UserLoginView(APIView):
                     return StandardResponse.error(errors="حساب کاربری فعال نشده است.", status=status.HTTP_409_CONFLICT)
 
                 refresh = RefreshToken.for_user(user)
+                annotated_user = User.objects.with_follow_info(user).get(pk=user.pk)
                 response = Response({
                     "message": "شما با موفقیت ورود کردید.",
-                    "data": self.serializer_show(user , context={"request": request}).data
+                    "data": self.serializer_show(annotated_user , context={"request": request}).data
                 }, status=status.HTTP_200_OK)
 
                 response.set_cookie("access_token", str(refresh.access_token), httponly=True, samesite='Lax')
@@ -136,6 +141,7 @@ class UserLoginView(APIView):
 class UserLogoutView(APIView):
     authentication_classes = []
     permission_classes = []
+
     def post(self,request):
         response = Response({"message": "شما با موفقیت خارج شدید."}, status=status.HTTP_200_OK)
         response.delete_cookie("access_token")
@@ -186,48 +192,43 @@ class PasswordResetView(APIView):
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class UserInfoView(APIView):
-    permission_classes = (permissions.AllowAny,)
+class UserInfoView(StandardResponseMixin, generics.RetrieveAPIView):
+    permission_classes = [permissions.AllowAny]
     serializer_class = UserInfoSerializer
-    
-    def get(self,request , username):
-        user = get_object_or_404(User, username__iexact=username)
-        serializer = self.serializer_class(user, context={"request": request})
-        return StandardResponse.success(data=serializer.data,status=status.HTTP_200_OK)
+    queryset = User.objects.all()
+    lookup_field = 'username'
+    lookup_url_kwarg = 'username'
+
+    def get_queryset(self):
+        return User.objects.all().with_follow_info(self.request.user)
     
 
-class UserChangeView(APIView):
-    permission_classes = (permissions.IsAuthenticated,)
+class UserMeView(StandardResponseMixin, generics.RetrieveUpdateAPIView):
+    permission_classes = [permissions.IsAuthenticated]
     serializer_class = UserInfoSerializer
 
-    def get(self,request):
-        serializer = self.serializer_class(request.user, context={"request": request})
-        return StandardResponse.success(message="اطلاعات گرفته شد.", data=serializer.data, status=status.HTTP_200_OK)
+    def get_object(self):
+        user = self.request.user
+        queryset = User.objects.with_follow_info(user)
+        return get_object_or_404(queryset, pk=user.pk)
 
-    def put(self, request):
-        if not request.data:
-            return StandardResponse.error(errors="حداثل یک فیلد خود را برای تغیر ارسال کنید.", status=status.HTTP_400_BAD_REQUEST)
-        serializer = self.serializer_class(request.user, data=request.data , partial=True, context={"request": request})
-        if serializer.is_valid():
-            serializer.save()
-            return StandardResponse.success(message="شما با موفقیت اطلاعات خود بروز کردید.", data=serializer.data, status=status.HTTP_200_OK)
-        return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_serializer_context(self):
+        return {'request': self.request}
     
 
-class SearchUserView(APIView):
-    permission_classes = (permissions.AllowAny,)
+class SearchUserView(StandardResponseMixin, generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
     serializer_class = UserPreViewSerializer
-    def get(self,request , search):
-        query = search
-        users = User.objects.filter(Q(username__icontains=query))
-        serializer = self.serializer_class(users, many=True, context={'request': request})
-        return StandardResponse.success(message="اطلاعات جستجو شد.", data=serializer.data, status=status.HTTP_200_OK)
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'first_name', 'last_name']
+    
+    def get_queryset(self):
+        return User.objects.all().with_follow_info(self.request.user)
 
 
 
 class UserFollowView(APIView):
     permission_classes = (permissions.IsAuthenticated,)
-    # serializer_class = FollowSerializer
 
     def post(self,request, username):
         user = get_object_or_404(User, username=username)
@@ -243,40 +244,23 @@ class UserFollowView(APIView):
     
 
 
-class UserFollowersView(APIView):
-    permission_classes = (permissions.AllowAny,)
+class UserFollowersView(StandardResponseMixin, generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
     serializer_class = UserPreViewSerializer
-    def get(self,request, username):
-        user = get_object_or_404(User,username=username)
-        queryset = User.objects.filter(
-            following__followed=user
-        ).exclude(pk=user.pk).distinct().prefetch_related(
-            Prefetch(
-                'following',
-                queryset=Follow.objects.filter(followed=user),
-                to_attr='my_followers'
-            )
-        )
-        serializer = UserPreViewSerializer(queryset, many=True, context={'request': request})
-        return StandardResponse.success(message="اطلاعات جستجو شد.", data=serializer.data, status=status.HTTP_200_OK)
-    
 
-class UserFollowingView(APIView):
-    permission_classes = (permissions.AllowAny,)
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        profile_owner = get_object_or_404(User, username__iexact=username)
+        followers = User.objects.filter(following_relations__to_user=profile_owner)
+        return followers.with_follow_info(self.request.user)
+
+
+class UserFollowingView(StandardResponseMixin, generics.ListAPIView):
+    permission_classes = [permissions.AllowAny]
     serializer_class = UserPreViewSerializer
-    def get(self,request, username):
-        user = get_object_or_404(User,username=username)
-        queryset = User.objects.filter(
-            followers__follower=user
-        ).exclude(pk=user.pk).distinct().prefetch_related(
-            Prefetch(
-                'followers',
-                queryset=Follow.objects.filter(follower=user),
-                to_attr='my_following'
-            )
-        )
-        serializer = UserPreViewSerializer(queryset, many=True, context={'request': request})
-        return StandardResponse.success(message="اطلاعات جستجو شد.", data=serializer.data, status=status.HTTP_200_OK)
-        
 
-
+    def get_queryset(self):
+        username = self.kwargs.get('username')
+        profile_owner = get_object_or_404(User, username__iexact=username)
+        following = User.objects.filter(follower_relations__from_user=profile_owner)
+        return following.with_follow_info(self.request.user)

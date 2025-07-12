@@ -37,9 +37,9 @@ class UserRegisterSerializer(serializers.ModelSerializer):
 
 class UserInfoSerializer(serializers.ModelSerializer):
 
-    is_follow = serializers.SerializerMethodField()
-    followers = serializers.SerializerMethodField()
-    following = serializers.SerializerMethodField()
+    followers = serializers.IntegerField(source='followers_count', read_only=True)
+    following = serializers.IntegerField(source='following_count', read_only=True)
+    is_follow = serializers.BooleanField(read_only=True, allow_null=True)
 
     avatar = serializers.ImageField(required=False)
 
@@ -53,26 +53,7 @@ class UserInfoSerializer(serializers.ModelSerializer):
             # 'username': {'read_only': True},
             'password': {'write_only': True},
             'email': {'read_only': True},
-            'followers': {'read_only': True},
-            'following': {'read_only': True},
-            'is_follow': {'read_only': True},
-
         }
-
-    def get_is_follow(self, obj):
-        user = self.context.get('request').user
-
-        if self.context.get('request').user.is_anonymous:
-            return None
-        if self.context.get('request').user == obj:
-            return None
-        
-        return obj.followers.filter(follower=user).exists()
-    def get_followers(self, obj):
-        return obj.followers.count()
-        
-    def get_following(self, obj):
-        return obj.following.count()
     
     def to_internal_value(self, data):
         unknown_fields = set(data.keys()) - set(self.fields.keys())
@@ -82,7 +63,6 @@ class UserInfoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "detail": f"فیلدهای نامعتبر ارسال شده‌اند: {', '.join(unknown_fields)}"
             })
-        
         return super().to_internal_value(data)
 
     def update(self, instance, validated_data):
@@ -97,21 +77,12 @@ class UserInfoSerializer(serializers.ModelSerializer):
 
 class UserPreViewSerializer(serializers.ModelSerializer):
 
-    is_follow = serializers.SerializerMethodField()
+    is_follow = serializers.BooleanField(allow_null=True, read_only = True)
 
     class Meta:
         model = User
         fields = ['username','first_name', 'last_name','avatar','is_follow']
 
-    def get_is_follow(self, obj):
-        user = self.context.get('request').user
-
-        if self.context.get('request').user.is_anonymous:
-            return None
-        if self.context.get('request').user == obj:
-            return None
-        
-        return obj.followers.filter(follower=user).exists()
     
 
 class PasswordResetCodeSerializer(serializers.Serializer):

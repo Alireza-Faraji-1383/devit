@@ -5,6 +5,23 @@ from django.contrib.auth.models import AbstractUser
 from django.forms import ValidationError
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFit
+from django.db.models import Count, Exists, OuterRef
+
+
+class UserQuerySet(models.QuerySet):
+    def with_follow_info(self, user):
+
+        is_follow = models.Value(None, output_field=models.BooleanField())
+
+        if user and user.is_authenticated:
+            is_follow = Exists(Follow.objects.filter(follower=user,followed=OuterRef('pk')))
+            
+        return self.annotate(
+            followers_count=Count('following_relations', distinct=True),
+            following_count=Count('follower_relations', distinct=True),
+            is_follow=is_follow
+        )
+
 
 class User(AbstractUser):
     
@@ -18,6 +35,8 @@ class User(AbstractUser):
         processors=[ResizeToFit(600, 600)],
         format='JPEG',
         options={'quality': 70},)
+    
+    objects = UserQuerySet.as_manager()
 
     def __str__(self):
         return self.username
@@ -43,8 +62,8 @@ class PasswordResetCode(models.Model):
 
 
 class Follow(models.Model):
-    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
-    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
+    follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following_relations')
+    followed = models.ForeignKey(User, on_delete=models.CASCADE, related_name='follower_relations')
     created = models.DateTimeField(auto_now_add=True)
 
     class Meta:
