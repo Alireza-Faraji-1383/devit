@@ -38,7 +38,7 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'content','slug', 'tags__title']
-    ordering_fields = ['created', 'likes_count','updated']
+    ordering_fields = ['created', 'likes_count','updated','comments_count']
     ordering = ['-created']
 
     def get_queryset(self):
@@ -84,7 +84,7 @@ class UserPostsView(StandardResponseMixin, generics.ListAPIView):
 
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['title', 'content','slug', 'tags__title']
-    ordering_fields = ['created', 'likes_count','updated','status']
+    ordering_fields = ['created', 'likes_count','updated','status','comments_count']
     ordering = ['-created']
 
     def get_queryset(self):
@@ -262,7 +262,7 @@ class PostTagListView(StandardResponseMixin, generics.ListAPIView):
 
     filter_backends = [filters.OrderingFilter]
 
-    ordering_fields = ['created', 'likes_count','updated']
+    ordering_fields = ['created', 'likes_count','updated','comments_count']
     ordering = ['-created']
 
     def get_queryset(self):
