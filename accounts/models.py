@@ -25,8 +25,11 @@ class UserQuerySet(models.QuerySet):
     
 
 class UserManager(DjangoUserManager):
-    pass
+    def get_queryset(self):
+        return UserQuerySet(self.model, using=self._db)
 
+    def with_follow_info(self, user):
+        return self.get_queryset().with_follow_info(user)
 
 class User(AbstractUser):
     
@@ -41,7 +44,13 @@ class User(AbstractUser):
         format='JPEG',
         options={'quality': 70},)
     
-    objects = UserManager.from_queryset(UserQuerySet)()
+    banner = ProcessedImageField(upload_to='banners/%Y/%m', blank=True, null=True,
+        # default='default/default_banner.jpg',
+        processors=[ResizeToFit(750, 90)],
+        format='JPEG',
+        options={'quality': 70},)
+    
+    objects = UserManager()
 
     def __str__(self):
         return self.username
