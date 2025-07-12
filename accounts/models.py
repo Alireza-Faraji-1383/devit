@@ -6,6 +6,7 @@ from django.forms import ValidationError
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFit
 from django.db.models import Count, Exists, OuterRef
+from django.contrib.auth.models import AbstractUser, UserManager as DjangoUserManager
 
 
 class UserQuerySet(models.QuerySet):
@@ -21,6 +22,10 @@ class UserQuerySet(models.QuerySet):
             following_count=Count('follower_relations', distinct=True),
             is_follow=is_follow
         )
+    
+
+class UserManager(DjangoUserManager):
+    pass
 
 
 class User(AbstractUser):
@@ -36,7 +41,7 @@ class User(AbstractUser):
         format='JPEG',
         options={'quality': 70},)
     
-    objects = UserQuerySet.as_manager()
+    objects = UserManager.from_queryset(UserQuerySet)()
 
     def __str__(self):
         return self.username
