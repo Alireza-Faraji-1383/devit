@@ -251,7 +251,7 @@ class UserFollowersView(StandardResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         username = self.kwargs.get('username')
         profile_owner = get_object_or_404(User, username__iexact=username)
-        followers = User.objects.filter(following_relations__to_user=profile_owner)
+        followers = User.objects.filter(following_relations__followed=profile_owner)
         return followers.with_follow_info(self.request.user)
 
 
@@ -262,5 +262,5 @@ class UserFollowingView(StandardResponseMixin, generics.ListAPIView):
     def get_queryset(self):
         username = self.kwargs.get('username')
         profile_owner = get_object_or_404(User, username__iexact=username)
-        following = User.objects.filter(follower_relations__from_user=profile_owner)
+        following = User.objects.filter(follower_relations__follower=profile_owner)
         return following.with_follow_info(self.request.user)
