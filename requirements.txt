@@ -1,0 +1,15 @@
+django
+djangorestframework
+djangorestframework-simplejwt
+django-allauth
+dj-rest-auth[with_social]
+google-auth
+google-auth-oauthlib
+django-imagekit
+Pillow
+django-cors-headers
+drf-spectacular
+celery
+redis
+psycopg2-binary
+django-redis
