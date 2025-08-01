@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework import filters
 
+from .tasks import send_activation_email_task , send_reset_code_task
 from core.mixins import StandardResponseMixin
 from .models import Follow, User , PasswordResetCode
 from .serializers import   (FollowSerializer, PasswordResetCodeSerializer, UserAuthSerializer , UserInfoSerializer , UserRegisterSerializer,
@@ -58,7 +59,7 @@ class UserRegisterView(APIView):
             user =serializer.save()
             user.is_active = False
             user.save()
-            send_activation_email(user)
+            send_activation_email_task.delay(user.pk)
             return StandardResponse.success(message="لطفا ایمیل خود را برسی کنید تا حساب کاربری فعال شود.", status=status.HTTP_201_CREATED)
         return StandardResponse.error(errors= serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -77,7 +78,7 @@ class UserSendActivationView(APIView):
             if user.is_active:
                 return StandardResponse.error(errors="این کاربر قبلا فعال شده است.", status=status.HTTP_400_BAD_REQUEST)
 
-            send_activation_email(user)
+            send_activation_email_task.delay(user.pk)
             return StandardResponse.success(message="ایمیل با موفقیت ارسال شد.", status=status.HTTP_201_CREATED)
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
@@ -161,7 +162,7 @@ class PasswordResetCodeView(APIView):
             latest_code = PasswordResetCode.objects.filter(user=user , is_used=False).order_by('-created').first()
             if latest_code and not latest_code.is_expired():
                 return StandardResponse.error(errors="لطفا صبر کنید کد قبلی هنوز قابل استفاده است.", status=status.HTTP_429_TOO_MANY_REQUESTS)
-            send_reset_code(user)
+            send_reset_code_task.delay(user.pk)
             return StandardResponse.success(message="کد بازیابی رمز عبور به ایمیل شما ارسال شد.", status=status.HTTP_201_CREATED)
         return StandardResponse.error(errors=serializer.errors, status=status.HTTP_400_BAD_REQUEST)
             
