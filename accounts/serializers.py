@@ -105,7 +105,7 @@ class PasswordResetSerializer(serializers.Serializer):
 class FollowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
-        fields = ['pk','follower','following']
+        fields = ['pk','follower','followed']
         extra_kwargs = {'follower': {'required': True},
-                        'following': {'required': True},
+                        'followed': {'required': True},
                         }

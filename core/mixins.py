@@ -1,6 +1,6 @@
 from rest_framework import status
 from rest_framework.response import Response
-from .utils.responses import StandardResponse  # کلاس پاسخ استاندارد 
+from .utils.responses import StandardResponse
 from rest_framework.exceptions import ValidationError
 
 class StandardResponseMixin:
@@ -12,7 +12,6 @@ class StandardResponseMixin:
 
         if not status.is_success(response.status_code):
             return super().finalize_response(request, response, *args, **kwargs)
-
 
         if response.status_code == status.HTTP_204_NO_CONTENT:
             response.status_code = status.HTTP_200_OK

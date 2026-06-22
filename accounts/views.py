@@ -92,7 +92,7 @@ class UserActivateView(APIView):
         except (TypeError, ValueError, OverflowError, User.DoesNotExist):
             user = None
         
-        if user == None:
+        if user is None:
             return StandardResponse.error(errors="کاربر مورد نظر شما وجود ندارد.", status=status.HTTP_400_BAD_REQUEST)
 
         if user.is_active:

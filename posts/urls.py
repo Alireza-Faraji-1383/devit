@@ -1,15 +1,13 @@
 from django.urls import path
-from .views import  (MediaCreateView , PostDetailView , PostListCreateView , UserPostsView , PostLikeView
-                     ,CommentDetailView , CommentListCreateView , CommentVoteView ,CommentRepliesListView
-                     ,PostSaveToggleView , SavedPostListView , PostTagListView , TagListView
-                     )
+from .views import (PostDetailView, PostListCreateView, UserPostsView, PostLikeView,
+                    CommentDetailView, CommentListCreateView, CommentVoteView, CommentRepliesListView,
+                    PostSaveToggleView, SavedPostListView, PostTagListView, TagListView)
 
 urlpatterns = [
     path('', PostListCreateView.as_view(), name='post-list-create'),
     
     path('saved/', SavedPostListView.as_view(), name='saved-post-list'),
     
-    path('media/create/', MediaCreateView.as_view(), name='media-create'),
     path('user/<str:user>/', UserPostsView.as_view(), name='user-posts-list'),
 
     path('tags/', TagListView.as_view(), name='tag-list'),

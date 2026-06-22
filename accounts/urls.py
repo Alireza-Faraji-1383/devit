@@ -16,10 +16,10 @@ urlpatterns = [
     path('password_reset/', PasswordResetView.as_view(), name='password_reset'),
     
     path('me/', UserMeView.as_view(), name='user'),
-    path("user/<str:username>/followers/", UserFollowersView.as_view(), name="user_followers"),
-    path("user/<str:username>/following/", UserFollowingView.as_view(), name="user_following"),
+    path('user/<str:username>/followers/', UserFollowersView.as_view(), name="user_followers"),
+    path('user/<str:username>/following/', UserFollowingView.as_view(), name="user_following"),
     path('user/<str:username>/follow/', UserFollowView.as_view(), name='user_follow'),
-    path('user/<str:username>/', UserInfoView.as_view(), name='user'),
+    path('user/<str:username>/', UserInfoView.as_view(), name='user-info'),
     path('search/', SearchUserView.as_view(), name='search_user'),
     
 

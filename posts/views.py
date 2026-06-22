@@ -1,5 +1,6 @@
 from django.db import IntegrityError
 from rest_framework import generics, permissions, status
+from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 from django.db.models import Count, Exists, OuterRef , Prefetch
@@ -55,7 +56,6 @@ class PostListCreateView(StandardResponseMixin, generics.ListCreateAPIView):
 class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIView):
 
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
-    # queryset = Post.objects.select_related('user').prefetch_related('tags').all()
     lookup_field = 'slug'
 
     def get_queryset(self):
@@ -63,13 +63,15 @@ class PostDetailView(StandardResponseMixin, generics.RetrieveUpdateDestroyAPIVie
             self.request.user).with_likes(self.request.user).with_saved_status(self.request.user).with_view_count().with_comments_count().select_related('user').prefetch_related('tags')
     
     def retrieve(self, request, *args, **kwargs):
-
         instance = self.get_object()
         if request.user.is_authenticated:
             PostView.objects.get_or_create(user=request.user, post=instance)
             
         serializer = self.get_serializer(instance)
-        return StandardResponse.success(message='پست با موفقیت بازیابی شد', data=serializer.data, status=status.HTTP_200_OK)
+        return Response({
+            "message": "پست با موفقیت بازیابی شد",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
     def get_serializer_class(self):
         if self.request.method in ['PUT', 'PATCH']:
@@ -207,7 +209,7 @@ class CommentVoteView(APIView):
         vote_type = request.data.get('vote_type')
 
         if vote_type not in [VoteComment.LIKE, VoteComment.DISLIKE]:
-            return StandardResponse.error("مقدار رای نامعتبر است.", status=status.HTTP_400_BAD_REQUEST)
+            return StandardResponse.error(errors="مقدار رای نامعتبر است.", status=status.HTTP_400_BAD_REQUEST)
 
         vote, created = VoteComment.objects.update_or_create(
             user=request.user, comment=comment,
